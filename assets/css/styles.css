@@ -1,0 +1,143 @@
+/* TaskLoom - Main Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Base Styles */
+body { 
+    font-family: 'Inter', sans-serif; 
+}
+
+/* Calendar Styles */
+.calendar-day {
+    min-height: 120px;
+    transition: all 0.3s ease;
+}
+
+.calendar-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.task-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 1px;
+}
+
+/* Animations */
+.slide-in {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Background Effects */
+.pastel-bg {
+    background: linear-gradient(135deg, #fef7ff 0%, #f0f9ff 50%, #f0fff4 100%);
+}
+
+.glass-effect {
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* Dark Mode Styles */
+.dark {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.dark .glass-effect {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+.dark .calendar-day {
+    background: rgba(30, 41, 59, 0.6);
+    border-color: rgba(71, 85, 105, 0.5);
+    color: #e2e8f0;
+}
+
+.dark .calendar-day:hover {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(139, 92, 246, 0.5);
+}
+
+.dark .bg-white {
+    background: rgba(30, 41, 59, 0.6) !important;
+    color: #e2e8f0;
+}
+
+.dark .text-gray-700 {
+    color: #e2e8f0 !important;
+}
+
+.dark .text-gray-600 {
+    color: #cbd5e1 !important;
+}
+
+.dark .text-gray-500 {
+    color: #94a3b8 !important;
+}
+
+.dark .border-gray-200 {
+    border-color: rgba(71, 85, 105, 0.5) !important;
+}
+
+.dark input, .dark select, .dark textarea {
+    background: rgba(30, 41, 59, 0.8) !important;
+    border-color: rgba(71, 85, 105, 0.5) !important;
+    color: #e2e8f0 !important;
+}
+
+.dark input:focus, .dark select:focus, .dark textarea:focus {
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1) !important;
+}
+
+/* Filter Button Styles */
+.daily-filter-btn {
+    background: rgba(255, 255, 255, 0.7);
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+}
+
+.daily-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+}
+
+.daily-filter-btn.active {
+    background: linear-gradient(135deg, #ec4899, #f472b6);
+    color: white;
+    border-color: #ec4899;
+}
+
+.main-filter-btn {
+    background: rgba(255, 255, 255, 0.7);
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+}
+
+.main-filter-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    color: #374151;
+}
+
+.main-filter-btn.active {
+    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    color: white;
+    border-color: #8b5cf6;
+}
