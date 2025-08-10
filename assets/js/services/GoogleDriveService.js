@@ -223,14 +223,14 @@ class GoogleDriveService {
         }
     }
 
-    // Sync data with Google Drive
+        // Sync data with Google Drive
     async syncWithGoogle(event) {
         if (!this.isSignedIn || !this.gapi_loaded || !this.accessToken) {
             NotificationService.show('⚠️ Not connected to Google Drive', 'warning');
             return;
         }
         
-        const syncButton = event ? event.target : document.getElementById('syncButton'); // Get button from event or by ID
+        const syncButton = event ? event.target : document.getElementById('syncButton');
 
         try {
             if (syncButton) {
@@ -245,16 +245,33 @@ class GoogleDriveService {
                 lastSync: new Date().toISOString()
             });
             
-            const metadata = {
-                name: 'taskloom-data.json',
-                parents: ['appDataFolder']
-            };
-            
             // Use fetch for listing files
             const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='taskloom-data.json' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
                 headers: { 'Authorization': `Bearer ${this.accessToken}` }
             });
             const listResult = await listResponse.json();
+
+            let metadata;
+            let uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+            let method = 'POST';
+
+            if (listResult.files && listResult.files.length > 0) {
+                // File exists: UPDATE the file.
+                // The 'parents' field is not allowed in an update (PATCH) request.
+                metadata = {
+                    name: 'taskloom-data.json'
+                };
+                const fileId = listResult.files[0].id;
+                uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
+                method = 'PATCH';
+            } else {
+                // File does not exist: CREATE the file.
+                // The 'parents' field is required for creation.
+                metadata = {
+                    name: 'taskloom-data.json',
+                    parents: ['appDataFolder']
+                };
+            }
 
             const boundary = '-------314159265358979323846';
             const delimiter = "\r\n--" + boundary + "\r\n";
@@ -268,15 +285,6 @@ class GoogleDriveService {
                 data +
                 close_delim;
             
-            let uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-            let method = 'POST';
-
-            if (listResult.files && listResult.files.length > 0) {
-                const fileId = listResult.files[0].id;
-                uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
-                method = 'PATCH';
-            }
-
             const uploadResponse = await fetch(uploadUrl, {
                 method: method,
                 headers: {
