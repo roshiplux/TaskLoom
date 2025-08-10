@@ -176,4 +176,14 @@ class UIService {
     static updateDailyStats() {
         StatsManager.updateDailyStats();
     }
+
+    // Show Google Drive unavailable state
+    static showGoogleDriveUnavailable() {
+        const signInBtn = document.getElementById('googleSignIn');
+        signInBtn.innerHTML = '❌ Google Drive Unavailable';
+        signInBtn.disabled = true;
+        signInBtn.className = 'px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-xl cursor-not-allowed';
+        
+        NotificationService.show('⚠️ Google Drive unavailable. Using local storage only.', 'warning');
+    }
 }
