@@ -1,4 +1,4 @@
-# TaskLoom - Organized File Structure
+# TaskLoom - Organized Your Works
 
 ## Overview
 TaskLoom has been refactored into a clean, modular architecture with separated concerns for better maintainability and scalability.
