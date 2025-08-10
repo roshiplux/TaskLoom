@@ -614,8 +614,8 @@
                         <div class="space-y-3 text-sm text-orange-700">
                             <p><strong>Replace these values in the JavaScript code:</strong></p>
                             <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-x-auto">
-                                <div>const CLIENT_ID = 'your-client-id.apps.googleusercontent.com';</div>
-                                <div>const API_KEY = 'your-api-key';</div>
+                                <div>const CLIENT_ID = '930425939666-d83p6p8ggkgdhpqfc2tbpdla4ku26iig.apps.googleusercontent.com';</div>
+                                <div>const API_KEY = 'AIzaSyBozSyGH9_t756soJLZFSR7Z-zZsD5J2q8';</div>
                             </div>
                             <div class="space-y-2">
                                 <p><strong>🔍 Where to find these:</strong></p>
@@ -911,6 +911,11 @@
             updateSettingsInfo();
         };
 
+
+        // Polling interval in milliseconds (e.g., 30 seconds)
+        const POLLING_INTERVAL = 30 * 1000;
+        let pollingTimer = null;
+
         // Initialize Google API
         async function initializeGoogleAPI() {
             try {
@@ -931,6 +936,7 @@
                 if (authInstance.isSignedIn.get()) {
                     handleSignInSuccess();
                     await loadFromGoogle(); // Auto-load data if already signed in
+                    startPollingGoogleDrive();
                 }
                 
                 // Update button text to show API is ready
@@ -941,6 +947,24 @@
                 document.getElementById('googleSignIn').innerHTML = '❌ Google Drive Unavailable';
                 document.getElementById('googleSignIn').disabled = true;
                 document.getElementById('googleSignIn').className = 'px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-xl cursor-not-allowed';
+            }
+        }
+
+        // Start polling for Google Drive updates
+        function startPollingGoogleDrive() {
+            if (pollingTimer) clearInterval(pollingTimer);
+            pollingTimer = setInterval(async () => {
+                if (isSignedIn && gapi_loaded) {
+                    await loadFromGoogle();
+                }
+            }, POLLING_INTERVAL);
+        }
+
+        // Stop polling when signed out
+        function stopPollingGoogleDrive() {
+            if (pollingTimer) {
+                clearInterval(pollingTimer);
+                pollingTimer = null;
             }
         }
 
@@ -1000,6 +1024,7 @@
             updateGoogleStatus(true, profile.getName(), profile.getEmail());
             
             isSignedIn = true;
+            startPollingGoogleDrive();
         }
 
         // Update Google status in settings
@@ -1055,6 +1080,7 @@
                 updateGoogleStatus(false);
                 
                 isSignedIn = false;
+                stopPollingGoogleDrive();
                 showNotification('👋 Signed out successfully', 'success');
                 
             } catch (error) {
