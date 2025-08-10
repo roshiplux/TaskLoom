@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google API Debug Test (New GIS)</title>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Google Drive API Debug Test (New GIS)</h1>
+    
+    <div id="status"></div>
+    
+    <button id="testApiLoad" class="btn-primary">Test API Load</button>
+    <button id="testAuth" class="btn-success" disabled>Test Authentication</button>
+    
+    <h3>Debug Log:</h3>
+    <pre id="debugLog"></pre>
+    
+    <script>
+        const CLIENT_ID = '930425939666-d83p6p8ggkgdhpqfc2tbpdla4ku26iig.apps.googleusercontent.com';
+        const API_KEY = 'AIzaSyBozSyGH9_t756soJLZFSR7Z-zZsD5J2q8';
+        const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        
+        let gapi_loaded = false;
+        let tokenClient;
+        let accessToken;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            
+            const statusElement = document.getElementById('status');
+            statusElement.innerHTML = `<div class="status ${type}">${message}</div>`;
+            
+            console.log(message);
+        }
+        
+        async function testApiLoad() {
+            try {
+                log('🔄 Testing Google API load (New GIS)...', 'info');
+                log(`Current origin: ${window.location.origin}`, 'info');
+                
+                if (typeof gapi === 'undefined') {
+                    throw new Error('Google API library not loaded');
+                }
+                
+                log('✅ Google API library is available', 'success');
+                
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('API load timeout'));
+                    }, 10000);
+                    
+                    gapi.load('client', {
+                        callback: () => {
+                            clearTimeout(timeout);
+                            resolve();
+                        },
+                        onerror: () => {
+                            clearTimeout(timeout);
+                            reject(new Error('Failed to load API modules'));
+                        }
+                    });
+                });
+                
+                log('✅ Google API client module loaded successfully', 'success');
+                
+                // Initialize gapi client (without auth2)
+                try {
+                    log('🔄 Initializing Google API client...', 'info');
+                    
+                    await gapi.client.init({
+                        apiKey: API_KEY,
+                        discoveryDocs: [DISCOVERY_DOC]
+                    });
+                    
+                    log('✅ Google API client initialized successfully', 'success');
+                } catch (initError) {
+                    log(`❌ Client initialization failed: ${initError?.message || initError}`, 'error');
+                    throw initError;
+                }
+                
+                // Initialize Google Identity Services
+                if (typeof google !== 'undefined' && google.accounts) {
+                    log('✅ Google Identity Services available', 'success');
+                    
+                    tokenClient = google.accounts.oauth2.initTokenClient({
+                        client_id: CLIENT_ID,
+                        scope: SCOPES,
+                        callback: (response) => {
+                            if (response.error !== undefined) {
+                                log(`❌ Auth error: ${response.error}`, 'error');
+                                return;
+                            }
+                            accessToken = response.access_token;
+                            log('✅ Access token received successfully', 'success');
+                            gapi.client.setToken({access_token: accessToken});
+                        },
+                    });
+                    
+                    log('✅ Token client initialized successfully', 'success');
+                } else {
+                    throw new Error('Google Identity Services not loaded');
+                }
+                
+                gapi_loaded = true;
+                document.getElementById('testAuth').disabled = false;
+                log('✅ All initialization complete - ready for authentication', 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error?.message || error || 'Unknown error'}`, 'error');
+                log(`Error type: ${typeof error}`, 'error');
+                log(`Error object: ${JSON.stringify(error, null, 2)}`, 'error');
+            }
+        }
+        
+        async function testAuth() {
+            if (!gapi_loaded) {
+                log('❌ Google API not loaded yet', 'error');
+                return;
+            }
+            
+            try {
+                log('🔄 Testing authentication (New GIS)...', 'info');
+                
+                // Request access token
+                tokenClient.requestAccessToken({prompt: 'consent'});
+                
+                // Note: The callback will handle the response
+                log('🔄 Authentication popup should appear...', 'info');
+                
+            } catch (error) {
+                log(`❌ Authentication failed: ${error.error || error.message}`, 'error');
+            }
+        }
+        
+        document.getElementById('testApiLoad').addEventListener('click', testApiLoad);
+        document.getElementById('testAuth').addEventListener('click', testAuth);
+        
+        // Auto-start test on page load
+        window.addEventListener('load', () => {
+            log('🚀 Debug page loaded (New GIS), starting automatic test...', 'info');
+            setTimeout(testApiLoad, 1000);
+        });
+    </script>
+</body>
+</html>

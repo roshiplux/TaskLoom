@@ -21,80 +21,104 @@ class GoogleDriveService {
         );
     }
 
-    // Initialize GAPI client
-    async initializeGapiClient() {
+    // Initialize Google API
+    async initialize() {
         try {
-            console.log('Starting GAPI client initialization...');
+            console.log('Starting Google API initialization (New GIS)...');
+            console.log('Current origin:', window.location.origin);
+            
+            // Check domain authorization
+            if (!this.isDomainAllowed()) {
+                console.warn('Current domain not in allowed list. You may need to add it to Google Cloud Console.');
+                console.log('Allowed domains:', CONFIG.APP.ALLOWED_DOMAINS);
+            }
+            
+            // Check if gapi is available
+            if (typeof gapi === 'undefined') {
+                throw new Error('Google API library not loaded');
+            }
             
             await new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => reject(new Error('gapi.load timeout')), 10000);
+                const timeout = setTimeout(() => {
+                    reject(new Error('Google API load timeout'));
+                }, 10000); // 10 second timeout
+                
                 gapi.load('client', {
-                    callback: () => { clearTimeout(timeout); resolve(); },
-                    onerror: () => { clearTimeout(timeout); reject(new Error('Failed to load gapi client')); }
+                    callback: () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    },
+                    onerror: () => {
+                        clearTimeout(timeout);
+                        reject(new Error('Failed to load Google API client'));
+                    }
                 });
             });
             
-            // This is now a dummy function as we are not using gapi.client for requests.
-            // We still need to initialize the client for gapi.client.setToken to work.
-            await gapi.client.init({
-                apiKey: CONFIG.GOOGLE.API_KEY,
-            });
-            console.log('GAPI client initialized for token handling.');
+            console.log('Google API client module loaded, initializing...');
             
-        } catch (error) {
-            console.error('GAPI client initialization failed:', error);
-            throw error; // Re-throw to be caught by the main app initializer
-        }
-    }
-
-    // Initialize Google Identity Services token client
-    initializeGisClient() {
-        try {
-            console.log('Initializing Google Identity Services (GIS)...');
-            
-            if (!window.google || !window.google.accounts) {
-                throw new Error('Google Identity Services not loaded.');
+            try {
+                await gapi.client.init({
+                    apiKey: CONFIG.GOOGLE.API_KEY,
+                    discoveryDocs: [CONFIG.GOOGLE.DISCOVERY_DOC]
+                });
+                
+                console.log('Google API client initialized successfully');
+            } catch (initError) {
+                console.error('Client initialization error:', initError);
+                
+                // Try without discovery docs
+                console.log('Trying initialization without discovery docs...');
+                await gapi.client.init({
+                    apiKey: CONFIG.GOOGLE.API_KEY
+                });
+                
+                // Load Drive API manually
+                await gapi.client.load('drive', 'v3');
+                console.log('Simplified initialization successful with manual Drive API load');
             }
             
-            this.tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CONFIG.GOOGLE.CLIENT_ID,
-                scope: CONFIG.GOOGLE.SCOPES,
-                callback: (response) => {
-                    // This callback handles both silent and manual sign-in responses.
-                    if (response.error) {
-                        // If the silent sign-in fails, we don't show an error.
-                        // The user simply needs to sign in manually.
-                        console.log('Silent sign-in failed or user not signed in.', response.error);
-                        // Ensure the sign-in button is visible and enabled for manual sign-in.
-                        this.updateSignInButtonUI(true); 
-                        return;
-                    }
-                    
-                    this.accessToken = response.access_token;
-                    gapi.client.setToken({ access_token: this.accessToken });
-                    
-                    console.log('Access token received.');
-                    this.handleSignInSuccess();
-                },
-            });
+            // Wait for Google Identity Services to be available
+            let gisAttempts = 0;
+            while ((!window.google || !window.google.accounts) && gisAttempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                gisAttempts++;
+            }
             
-            console.log('GIS token client initialized successfully.');
+            // Initialize Google Identity Services
+            if (typeof google !== 'undefined' && google.accounts) {
+                console.log('Initializing Google Identity Services...');
+                
+                this.tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CONFIG.GOOGLE.CLIENT_ID,
+                    scope: CONFIG.GOOGLE.SCOPES,
+                    callback: (response) => {
+                        if (response.error !== undefined) {
+                            console.error('Auth error:', response.error);
+                            NotificationService.show(`❌ Authentication failed: ${response.error}`, 'error');
+                            return;
+                        }
+                        
+                        this.accessToken = response.access_token;
+                        gapi.client.setToken({access_token: this.accessToken});
+                        
+                        console.log('Access token received successfully');
+                        this.handleSignInSuccess();
+                        this.loadFromGoogle();
+                        this.startPolling();
+                        NotificationService.show('✅ Connected to Google Drive successfully!', 'success');
+                    },
+                });
+                
+                console.log('Token client initialized successfully');
+            } else {
+                throw new Error('Google Identity Services not loaded');
+            }
+            
             this.gapi_loaded = true;
-
-            // Attempt a silent sign-in on page load
-            this.tokenClient.requestAccessToken({prompt: 'none'});
             
-        } catch (error) {
-            console.error('GIS client initialization failed:', error);
-            this.updateSignInButtonUI(false); // Show unavailable state
-            throw error;
-        }
-    }
-
-    // Helper to update the sign-in button UI
-    updateSignInButtonUI(isAvailable) {
-        const signInBtn = document.getElementById('googleSignIn');
-        if (isAvailable) {
+            // Update UI to show available
+            const signInBtn = document.getElementById('googleSignIn');
             signInBtn.innerHTML = `
                 <svg class="w-5 h-5" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -106,11 +130,28 @@ class GoogleDriveService {
             `;
             signInBtn.disabled = false;
             signInBtn.className = 'px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2';
+            
+            console.log('Google Drive is ready for connection');
             NotificationService.show('✅ Google Drive is ready to connect!', 'success');
-        } else {
+            
+        } catch (error) {
+            console.error('Google API initialization failed:', error);
+            console.log('Falling back to local storage only');
+            
+            const signInBtn = document.getElementById('googleSignIn');
             signInBtn.innerHTML = '❌ Google Drive Unavailable';
             signInBtn.disabled = true;
             signInBtn.className = 'px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-xl cursor-not-allowed';
+            
+            // Show specific error message
+            let errorMessage = '⚠️ Google Drive unavailable. Using local storage only.';
+            if (error.message.includes('not loaded')) {
+                errorMessage = '⚠️ Google API failed to load. Check your internet connection.';
+            } else if (error.message.includes('timeout')) {
+                errorMessage = '⚠️ Google API loading timed out. Try refreshing the page.';
+            }
+            
+            NotificationService.show(errorMessage, 'warning');
         }
     }
 
@@ -125,7 +166,7 @@ class GoogleDriveService {
             document.getElementById('googleSignIn').innerHTML = '⏳ Connecting...';
             document.getElementById('googleSignIn').disabled = true;
             
-            // Request access token using new GIS, with consent prompt for manual sign-in
+            // Request access token using new GIS
             this.tokenClient.requestAccessToken({prompt: 'consent'});
             
         } catch (error) {
@@ -154,17 +195,11 @@ class GoogleDriveService {
     async handleSignInSuccess() {
         try {
             // Get user info using the new token
-            const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`
-                }
+            const response = await gapi.client.request({
+                path: 'https://www.googleapis.com/oauth2/v2/userinfo'
             });
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch user info: ${response.statusText}`);
-            }
             
-            this.userProfile = await response.json();
+            this.userProfile = response.result;
             
             document.getElementById('googleSignIn').classList.add('hidden');
             document.getElementById('userInfo').classList.remove('hidden');
@@ -175,10 +210,6 @@ class GoogleDriveService {
             UIService.updateGoogleStatus(true, this.userProfile.name, this.userProfile.email);
             
             this.isSignedIn = true;
-            
-            // After successful sign-in, load data and start polling
-            await this.loadFromGoogle();
-            this.startPolling();
             
         } catch (error) {
             console.error('Failed to get user info:', error);
@@ -224,15 +255,14 @@ class GoogleDriveService {
     }
 
     // Sync data with Google Drive
-    async syncWithGoogle(event) {
+    async syncWithGoogle() {
         if (!this.isSignedIn || !this.gapi_loaded || !this.accessToken) {
             NotificationService.show('⚠️ Not connected to Google Drive', 'warning');
             return;
         }
         
-        const syncButton = event ? event.target : document.getElementById('syncButton'); // Get button from event or by ID
-
         try {
+            const syncButton = event?.target;
             if (syncButton) {
                 syncButton.innerHTML = '⏳ Syncing...';
                 syncButton.disabled = true;
@@ -250,44 +280,39 @@ class GoogleDriveService {
                 parents: ['appDataFolder']
             };
             
-            // Use fetch for listing files
-            const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='taskloom-data.json' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
-                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            const response = await gapi.client.drive.files.list({
+                q: "name='taskloom-data.json' and parents in 'appDataFolder'",
+                spaces: 'appDataFolder'
             });
-            const listResult = await listResponse.json();
-
+            
             const boundary = '-------314159265358979323846';
             const delimiter = "\r\n--" + boundary + "\r\n";
             const close_delim = "\r\n--" + boundary + "--";
             
-            const multipartRequestBody = delimiter +
-                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+            const body = delimiter +
+                'Content-Type: application/json\r\n\r\n' +
                 JSON.stringify(metadata) +
                 delimiter +
-                'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
+                'Content-Type: application/json\r\n\r\n' +
                 data +
                 close_delim;
             
-            let uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-            let method = 'POST';
-
-            if (listResult.files && listResult.files.length > 0) {
-                const fileId = listResult.files[0].id;
-                uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
-                method = 'PATCH';
-            }
-
-            const uploadResponse = await fetch(uploadUrl, {
-                method: method,
-                headers: {
-                    'Authorization': `Bearer ${this.accessToken}`,
-                    'Content-Type': `multipart/related; boundary="${boundary}"`
-                },
-                body: multipartRequestBody
-            });
-
-            if (!uploadResponse.ok) {
-                throw new Error(`Upload failed: ${await uploadResponse.text()}`);
+            if (response.result.files.length > 0) {
+                await gapi.client.request({
+                    path: `https://www.googleapis.com/upload/drive/v3/files/${response.result.files[0].id}`,
+                    method: 'PATCH',
+                    params: { uploadType: 'multipart' },
+                    headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
+                    body: body
+                });
+            } else {
+                await gapi.client.request({
+                    path: 'https://www.googleapis.com/upload/drive/v3/files',
+                    method: 'POST',
+                    params: { uploadType: 'multipart' },
+                    headers: { 'Content-Type': 'multipart/related; boundary="' + boundary + '"' },
+                    body: body
+                });
             }
             
             if (syncButton) {
@@ -316,40 +341,20 @@ class GoogleDriveService {
     async loadFromGoogle() {
         if (!this.isSignedIn || !this.gapi_loaded || !this.accessToken) return;
         
-        console.log('Attempting to load data from Google Drive...');
         try {
-            // Use fetch for listing files
-            const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='taskloom-data.json' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
-                headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            const response = await gapi.client.drive.files.list({
+                q: "name='taskloom-data.json' and parents in 'appDataFolder'",
+                spaces: 'appDataFolder'
             });
-            const listResult = await listResponse.json();
             
-            console.log('Drive files.list response:', listResult);
-
-            if (listResult.files && listResult.files.length > 0) {
-                const fileId = listResult.files[0].id;
-                console.log(`Found data file with ID: ${fileId}`);
-
-                // Use fetch for getting file content
-                const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-                    headers: { 'Authorization': `Bearer ${this.accessToken}` }
+            if (response.result.files.length > 0) {
+                const fileId = response.result.files[0].id;
+                const file = await gapi.client.drive.files.get({
+                    fileId: fileId,
+                    alt: 'media'
                 });
                 
-                if (!fileResponse.ok) {
-                    throw new Error(`Failed to get file content: ${fileResponse.statusText}`);
-                }
-
-                const fileBody = await fileResponse.text();
-                
-                if (!fileBody || fileBody.trim() === '') {
-                    console.warn('Data file is empty. Using local data.');
-                    NotificationService.show('📁 No backup data found in Google Drive. Starting fresh.', 'info');
-                    return;
-                }
-                
-                console.log('File body received:', fileBody);
-                const loadedData = JSON.parse(fileBody);
-                console.log('Successfully parsed data from Drive:', loadedData);
+                const loadedData = JSON.parse(file.body);
                 
                 if (loadedData.monthlyTasks) {
                     TaskManager.monthlyTasks = { ...TaskManager.monthlyTasks, ...loadedData.monthlyTasks };

@@ -18,8 +18,16 @@ class TaskLoomApp {
         UIService.initializeTheme();
         UIService.updateSettingsInfo();
         
-        // Initialize Google Drive service
-        await this.googleDriveService.initialize();
+        // Initialize Google Drive service in two steps
+        try {
+            await this.googleDriveService.initializeGapiClient();
+            // GIS client needs to be initialized after the GIS script is loaded
+            // which is handled by the `onload` event of the script tag.
+            // We will call it from there.
+        } catch (error) {
+            console.error('Failed to initialize Google services:', error);
+            UIService.showGoogleDriveUnavailable();
+        }
         
         // Setup event listeners
         this.setupEventListeners();
@@ -96,4 +104,13 @@ let app;
 window.onload = async function() {
     app = new TaskLoomApp();
     await app.initialize();
+    
+    // Now that the main app is ready, initialize the GIS client
+    // This ensures the GIS script has had time to load
+    try {
+        app.googleDriveService.initializeGisClient();
+    } catch (error) {
+        console.error('Failed to initialize Google Identity Services:', error);
+        UIService.showGoogleDriveUnavailable();
+    }
 };
