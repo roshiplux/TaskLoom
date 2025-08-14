@@ -51,66 +51,81 @@ class GoogleDriveService {
     initializeGisClient() {
         try {
             console.log('Initializing Google Identity Services (GIS)...');
-            
-            if (!window.google || !window.google.accounts) {
-                throw new Error('Google Identity Services not loaded.');
-            }
-            
+            if (!window.google || !window.google.accounts) throw new Error('Google Identity Services not loaded.');
+
             this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CONFIG.GOOGLE.CLIENT_ID,
                 scope: CONFIG.GOOGLE.SCOPES,
                 callback: (response) => {
-                    // This callback handles both silent and manual sign-in responses.
                     if (response.error) {
-                        // If the silent sign-in fails, we don't show an error.
-                        // The user simply needs to sign in manually.
-                        console.log('Silent sign-in failed or user not signed in.', response.error);
-                        // Ensure the sign-in button is visible and enabled for manual sign-in.
-                        this.updateSignInButtonUI(true); 
+                        console.log('Token request error:', response.error);
+                        this.isSignedIn = false;
+                        this.updateSignInButtonUI(true, false);
                         return;
                     }
-                    
                     this.accessToken = response.access_token;
                     gapi.client.setToken({ access_token: this.accessToken });
-                    
                     console.log('Access token received.');
                     this.handleSignInSuccess();
-                },
+                }
             });
-            
+
             console.log('GIS token client initialized successfully.');
             this.gapi_loaded = true;
 
-            // Attempt a silent sign-in on page load
-            this.tokenClient.requestAccessToken({prompt: 'none'});
-            
+            // Attempt token restore (same tab session only)
+            const savedToken = sessionStorage.getItem('taskloomAccessToken');
+            const savedExpiry = parseInt(sessionStorage.getItem('taskloomAccessTokenExpiry') || '0', 10);
+            if (savedToken && savedExpiry && Date.now() < savedExpiry) {
+                this.accessToken = savedToken;
+                gapi.client.setToken({ access_token: this.accessToken });
+                try {
+                    const raw = sessionStorage.getItem('taskloomUserProfile');
+                    if (raw) this.userProfile = JSON.parse(raw);
+                } catch (_) {}
+                this.isSignedIn = true;
+                this.updateSignInButtonUI(true, true);
+                // Start background sync without re-prompt
+                this.loadFromGoogle();
+                this.startPolling();
+            } else {
+                // No valid token; show signed-out UI (no automatic popup)
+                this.isSignedIn = false;
+                this.updateSignInButtonUI(true, false);
+            }
         } catch (error) {
             console.error('GIS client initialization failed:', error);
-            this.updateSignInButtonUI(false); // Show unavailable state
+            this.updateSignInButtonUI(false);
             throw error;
         }
     }
 
     // Helper to update the sign-in button UI
-    updateSignInButtonUI(isAvailable) {
-        const signInBtn = document.getElementById('googleSignIn');
-        if (isAvailable) {
-            signInBtn.innerHTML = `
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Connect Google Drive
-            `;
-            signInBtn.disabled = false;
-            signInBtn.className = 'px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2';
-            NotificationService.show('✅ Google Drive is ready to connect!', 'success');
+    updateSignInButtonUI(isAvailable, isSignedIn = false) {
+        const signInBtn = document.getElementById('googleSignInBtn');
+        const userInfo = document.getElementById('userInfo');
+        const signOutBtn = document.getElementById('googleSignOutBtn');
+
+        // Do nothing if the elements aren't on the current page
+        if (!signInBtn || !userInfo || !signOutBtn) return;
+
+        if (isSignedIn) {
+            signInBtn.classList.add('hidden');
+            userInfo.classList.remove('hidden');
+            userInfo.style.display = 'flex';
+            signOutBtn.style.display = 'inline-block';
         } else {
-            signInBtn.innerHTML = '❌ Google Drive Unavailable';
-            signInBtn.disabled = true;
-            signInBtn.className = 'px-6 py-3 bg-gray-300 text-gray-500 font-medium rounded-xl cursor-not-allowed';
+            signInBtn.classList.remove('hidden');
+            userInfo.classList.add('hidden');
+            userInfo.style.display = 'none';
+            signOutBtn.style.display = 'none';
+            if (isAvailable) {
+                signInBtn.innerHTML = '<i class="fab fa-google"></i> Connect Drive';
+                signInBtn.disabled = false;
+            } else {
+                signInBtn.innerHTML = '❌ Drive N/A';
+                signInBtn.disabled = true;
+            }
         }
     }
 
@@ -122,26 +137,18 @@ class GoogleDriveService {
         }
         
         try {
-            document.getElementById('googleSignIn').innerHTML = '⏳ Connecting...';
-            document.getElementById('googleSignIn').disabled = true;
+            const btn = document.getElementById('googleSignInBtn');
+            if (btn) {
+                btn.innerHTML = '⏳ Connecting...';
+                btn.disabled = true;
+            }
             
             // Request access token using new GIS, with consent prompt for manual sign-in
             this.tokenClient.requestAccessToken({prompt: 'consent'});
             
         } catch (error) {
             console.error('Sign in failed:', error);
-            
-            document.getElementById('googleSignIn').innerHTML = `
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Connect Google Drive
-            `;
-            document.getElementById('googleSignIn').disabled = false;
-            
+            this.updateSignInButtonUI(true, false);
             if (error.error === 'popup_closed_by_user') {
                 NotificationService.show('⚠️ Sign in was cancelled', 'warning');
             } else {
@@ -166,22 +173,39 @@ class GoogleDriveService {
             
             this.userProfile = await response.json();
             
-            document.getElementById('googleSignIn').classList.add('hidden');
-            document.getElementById('userInfo').classList.remove('hidden');
             document.getElementById('userName').textContent = this.userProfile.name;
-            document.getElementById('userEmail').textContent = this.userProfile.email;
             document.getElementById('userPhoto').src = this.userProfile.picture;
             
-            UIService.updateGoogleStatus(true, this.userProfile.name, this.userProfile.email);
-            
             this.isSignedIn = true;
+            // Persist minimal profile and access token (session only) with naive expiry (55 min)
+            try {
+                const EXPIRY_MS = 55 * 60 * 1000; // slightly less than 1h
+                sessionStorage.setItem('taskloomSignedIn', '1');
+                sessionStorage.setItem('taskloomUserProfile', JSON.stringify({ name: this.userProfile.name, picture: this.userProfile.picture }));
+                sessionStorage.setItem('taskloomAccessToken', this.accessToken);
+                sessionStorage.setItem('taskloomAccessTokenExpiry', (Date.now() + EXPIRY_MS).toString());
+            } catch (_) {}
+            this.updateSignInButtonUI(true, true);
+            NotificationService.show(`✅ Signed in as ${this.userProfile.name}`, 'success');
             
             // After successful sign-in, load data and start polling
             await this.loadFromGoogle();
             this.startPolling();
+
+            // Persist flag to skip landing in future sessions
+            try { localStorage.setItem('taskloomSkipLanding', '1'); } catch(_) {}
+
+            // If currently on landing (index.html), redirect user into app automatically
+            try {
+                const path = window.location.pathname.toLowerCase();
+                if (/(?:^|\/)(index\.html)?$/.test(path)) {
+                    setTimeout(()=> { window.location.href = 'calendar.html'; }, 600);
+                }
+            } catch(_) {}
             
         } catch (error) {
             console.error('Failed to get user info:', error);
+            this.updateSignInButtonUI(true, false);
             NotificationService.show('⚠️ Connected but failed to get user info', 'warning');
         }
     }
@@ -198,22 +222,14 @@ class GoogleDriveService {
             this.accessToken = null;
             this.userProfile = null;
             
-            document.getElementById('googleSignIn').classList.remove('hidden');
-            document.getElementById('googleSignIn').innerHTML = `
-                <svg class="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Connect Google
-            `;
-            document.getElementById('googleSignIn').disabled = false;
-            document.getElementById('userInfo').classList.add('hidden');
-            
-            UIService.updateGoogleStatus(false);
-            
             this.isSignedIn = false;
+            try {
+                sessionStorage.removeItem('taskloomSignedIn');
+                sessionStorage.removeItem('taskloomUserProfile');
+                sessionStorage.removeItem('taskloomAccessToken');
+                sessionStorage.removeItem('taskloomAccessTokenExpiry');
+            } catch (_) {}
+            this.updateSignInButtonUI(true, false);
             this.stopPolling();
             NotificationService.show('👋 Signed out successfully', 'success');
             
@@ -224,67 +240,51 @@ class GoogleDriveService {
     }
 
         // Sync data with Google Drive
-    async syncWithGoogle(event) {
+    async syncWithGoogle() {
         if (!this.isSignedIn || !this.gapi_loaded || !this.accessToken) {
-            NotificationService.show('⚠️ Not connected to Google Drive', 'warning');
             return;
         }
-        
-        const syncButton = event ? event.target : document.getElementById('syncButton');
 
         try {
-            if (syncButton) {
-                syncButton.innerHTML = '⏳ Syncing...';
-                syncButton.disabled = true;
-            }
-            
+            const dataToSync = StorageService.getAllData();
             const data = JSON.stringify({
-                monthlyTasks: TaskManager.monthlyTasks,
-                mainTasks: TaskManager.mainTasks,
-                monthlyTodoTasks: TaskManager.monthlyTodoTasks,
+                ...dataToSync,
                 lastSync: new Date().toISOString()
             });
-            
-            // Use fetch for listing files
-            const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='taskloom-data.json' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
+
+            const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${CONFIG.GOOGLE.FILE_NAME}' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
                 headers: { 'Authorization': `Bearer ${this.accessToken}` }
             });
-            const listResult = await listResponse.json();
 
+            if (!listResponse.ok) {
+                throw new Error(`Failed to list files: ${await listResponse.text()}`);
+            }
+            const listResult = await listResponse.json();
             let metadata;
             let uploadUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
             let method = 'POST';
 
             if (listResult.files && listResult.files.length > 0) {
-                // File exists: UPDATE the file.
-                // The 'parents' field is not allowed in an update (PATCH) request.
-                metadata = {
-                    name: 'taskloom-data.json'
-                };
                 const fileId = listResult.files[0].id;
+                metadata = { name: CONFIG.GOOGLE.FILE_NAME };
                 uploadUrl = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=multipart`;
                 method = 'PATCH';
             } else {
-                // File does not exist: CREATE the file.
-                // The 'parents' field is required for creation.
-                metadata = {
-                    name: 'taskloom-data.json',
-                    parents: ['appDataFolder']
-                };
+                metadata = { name: CONFIG.GOOGLE.FILE_NAME, parents: ['appDataFolder'] };
             }
-
             const boundary = '-------314159265358979323846';
-            const delimiter = "\r\n--" + boundary + "\r\n";
-            const close_delim = "\r\n--" + boundary + "--";
-            
-            const multipartRequestBody = delimiter +
+            const delimiter = `\r\n--${boundary}\r\n`;
+            const close_delim = `\r\n--${boundary}--`;
+
+            const multipartRequestBody =
+                delimiter +
                 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
                 JSON.stringify(metadata) +
                 delimiter +
                 'Content-Type: application/json; charset=UTF-8\r\n\r\n' +
                 data +
                 close_delim;
-            
+
             const uploadResponse = await fetch(uploadUrl, {
                 method: method,
                 headers: {
@@ -297,25 +297,12 @@ class GoogleDriveService {
             if (!uploadResponse.ok) {
                 throw new Error(`Upload failed: ${await uploadResponse.text()}`);
             }
-            
-            if (syncButton) {
-                syncButton.innerHTML = '🔄 Sync';
-                syncButton.disabled = false;
-            }
-            
+
             localStorage.setItem(CONFIG.STORAGE.LAST_SYNC, new Date().toISOString());
-            UIService.updateSettingsInfo();
-            
-            NotificationService.show('✅ Data synced to Google Drive!', 'success');
-            
+            console.log('Sync successful at', new Date().toLocaleTimeString());
+
         } catch (error) {
             console.error('Sync failed:', error);
-            
-            if (syncButton) {
-                syncButton.innerHTML = '🔄 Sync';
-                syncButton.disabled = false;
-            }
-            
             NotificationService.show('❌ Sync failed. Check your connection.', 'error');
         }
     }
@@ -323,64 +310,47 @@ class GoogleDriveService {
     // Load data from Google Drive
     async loadFromGoogle() {
         if (!this.isSignedIn || !this.gapi_loaded || !this.accessToken) return;
-        
+
         console.log('Attempting to load data from Google Drive...');
         try {
-            // Use fetch for listing files
-            const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='taskloom-data.json' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
+            const listResponse = await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${CONFIG.GOOGLE.FILE_NAME}' and parents in 'appDataFolder'&spaces=appDataFolder&fields=files(id,name)`, {
                 headers: { 'Authorization': `Bearer ${this.accessToken}` }
             });
             const listResult = await listResponse.json();
-            
-            console.log('Drive files.list response:', listResult);
 
             if (listResult.files && listResult.files.length > 0) {
                 const fileId = listResult.files[0].id;
-                console.log(`Found data file with ID: ${fileId}`);
-
-                // Use fetch for getting file content
                 const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
                     headers: { 'Authorization': `Bearer ${this.accessToken}` }
                 });
-                
+
                 if (!fileResponse.ok) {
                     throw new Error(`Failed to get file content: ${fileResponse.statusText}`);
                 }
 
                 const fileBody = await fileResponse.text();
-                
                 if (!fileBody || fileBody.trim() === '') {
-                    console.warn('Data file is empty. Using local data.');
+                    console.warn('Data file from Drive is empty. Using local data.');
                     NotificationService.show('📁 No backup data found in Google Drive. Starting fresh.', 'info');
+                    await this.syncWithGoogle();
                     return;
                 }
-                
-                console.log('File body received:', fileBody);
+
                 const loadedData = JSON.parse(fileBody);
-                console.log('Successfully parsed data from Drive:', loadedData);
                 
-                if (loadedData.monthlyTasks) {
-                    TaskManager.monthlyTasks = { ...TaskManager.monthlyTasks, ...loadedData.monthlyTasks };
-                }
-                if (loadedData.mainTasks) {
-                    const existingIds = new Set(TaskManager.mainTasks.map(t => t.id));
-                    const newTasks = loadedData.mainTasks.filter(t => !existingIds.has(t.id));
-                    TaskManager.mainTasks = [...TaskManager.mainTasks, ...newTasks];
-                }
-                if (loadedData.monthlyTodoTasks) {
-                    TaskManager.monthlyTodoTasks = { ...TaskManager.monthlyTodoTasks, ...loadedData.monthlyTodoTasks };
-                }
-                
-                StorageService.saveLocalData();
-                CalendarRenderer.renderCalendar();
-                StatsManager.updateMonthlyStats();
-                TaskRenderer.renderMainTasks();
-                TaskRenderer.renderMonthlyTodoList();
-                
+                const dataToLoad = {
+                    monthlyTasks: loadedData.monthlyTasks || [],
+                    dailyTasks: loadedData.dailyTasks || {}
+                };
+
+                StorageService.setAllData(dataToLoad);
+                document.dispatchEvent(new CustomEvent('google-drive-data-loaded'));
+
                 const lastSync = loadedData.lastSync ? new Date(loadedData.lastSync).toLocaleString() : 'Unknown';
                 NotificationService.show(`📥 Data loaded from Google Drive (Last sync: ${lastSync})`, 'success');
             } else {
-                NotificationService.show('📁 No backup found in Google Drive', 'info');
+                NotificationService.show('📁 No backup found in Google Drive. Syncing current data.', 'info');
+                await this.syncWithGoogle();
             }
         } catch (error) {
             console.error('Load from Google failed:', error);
@@ -405,4 +375,50 @@ class GoogleDriveService {
             this.pollingTimer = null;
         }
     }
+
+    // Switch account: force user to choose account again
+    switchAccount() {
+        if (!this.gapi_loaded || !this.tokenClient) {
+            NotificationService.show('⚠️ Google not ready yet', 'warning');
+            return;
+        }
+        // Clear current session state but keep UI signed-out to prompt selection
+        this.signOut();
+        // After brief delay, open consent with select_account prompt
+        setTimeout(() => {
+            try {
+                this.tokenClient.requestAccessToken({ prompt: 'select_account consent' });
+            } catch (e) {
+                console.error('Switch account failed:', e);
+                NotificationService.show('❌ Switch account failed', 'error');
+            }
+        }, 400);
+    }
 }
+
+// Restore UI state quickly on navigation before scripts request a new sign-in
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        if (sessionStorage.getItem('taskloomSignedIn') === '1') {
+            const raw = sessionStorage.getItem('taskloomUserProfile');
+            if (raw) {
+                const profile = JSON.parse(raw);
+                window.__taskloomRestoredProfile = profile;
+                const userNameEl = document.getElementById('userName');
+                const userPhotoEl = document.getElementById('userPhoto');
+                if (userNameEl && userPhotoEl) {
+                    userNameEl.textContent = profile.name || '';
+                    userPhotoEl.src = profile.picture || '';
+                    const signInBtn = document.getElementById('googleSignInBtn');
+                    const userInfo = document.getElementById('userInfo');
+                    const signOutBtn = document.getElementById('googleSignOutBtn');
+                    if (signInBtn && userInfo && signOutBtn) {
+                        signInBtn.style.display = 'none';
+                        userInfo.style.display = 'flex';
+                        signOutBtn.style.display = 'inline-block';
+                    }
+                }
+            }
+        }
+    } catch (_) {}
+});

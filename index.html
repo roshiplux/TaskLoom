@@ -3,643 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TaskLoom - Weave your tasks into perfect productivity with our intuitive task management calendar.">
+    <meta name="keywords" content="task management, productivity, calendar, to-do list, organization">
+    <meta name="author" content="TaskLoom">
     <title>TaskLoom - Monthly Task Calendar</title>
     
-    <!-- This is the corrected Content Security Policy -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.tailwindcss.com https://apis.google.com https://accounts.google.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https://*.googleusercontent.com; connect-src 'self' https://www.googleapis.com https://accounts.google.com;">
-
-    <!-- External Dependencies -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="TaskLoom - Monthly Task Calendar">
+    <meta property="og:description" content="Weave your tasks into perfect productivity with our intuitive task management calendar.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://roshiplux.github.io/TaskLoom">
     
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        // If already authenticated, go straight to calendar
+        (function(){
+            const check = () => {
+                try {
+                    if (sessionStorage.getItem('taskloomFirebaseSignedIn') === '1') {
+                        window.location.replace('calendar.html');
+                    }
+                } catch(e){}
+            };
+            check();
+        })();
+    </script>
 </head>
-<body class="pastel-bg min-h-screen">
-    <div class="container mx-auto px-4 py-6 max-w-7xl">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">
-                🗓️ TaskLoom
-            </h1>
-            <p class="text-gray-600">Weave your tasks into perfect productivity</p>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>TaskLoom</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="index.html" class="active">Welcome</a></li>
+                </ul>
+                <button id="googleAuthBtn" class="cta-button">Sign In</button>
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </nav>
         </div>
-
-        <!-- Google Sync & Controls -->
-        <div class="glass-effect rounded-2xl shadow-lg p-6 mb-6">
-            <div class="flex flex-col lg:flex-row justify-between items-center gap-4">
-                <!-- Left Section: Google Account -->
-                <div class="flex items-center gap-4">
-                    <button id="googleSignIn" onclick="signIn()" class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 shadow-md flex items-center gap-2">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                        Connect Google
-                    </button>
-                    
-                    <!-- User Profile (Hidden by default) -->
-                    <div id="userInfo" class="hidden flex items-center gap-3 bg-white bg-opacity-60 rounded-xl p-3 border border-green-200">
-                        <img id="userPhoto" class="w-12 h-12 rounded-full border-2 border-green-300 shadow-md" alt="User">
-                        <div class="flex-1">
-                            <div id="userName" class="font-semibold text-gray-800 text-sm"></div>
-                            <div id="userEmail" class="text-xs text-gray-600 mb-1"></div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-green-600 font-medium">🟢 Connected</span>
-                                <button onclick="syncWithGoogle()" class="text-xs text-blue-500 hover:text-blue-700 font-medium" title="Manual sync">
-                                    🔄 Sync
-                                </button>
-                                <button onclick="signOut()" class="text-xs text-red-500 hover:text-red-700 font-medium">
-                                    🚪 Sign Out
-                                </button>
-                            </div>
+    </header>
+    <main id="main-content">
+        <section class="hero">
+            <div class="container" style="max-width:840px;">
+                <h1>TaskLoom</h1>
+                <p>An opinionated, fast task manager that weaves Monthly goals + Daily focus with automatic cloud sync and Google Calendar events.</p>
+                <div class="hero-buttons">
+                    <button id="googleAuthBtnHero" class="btn btn-primary"><i class="fab fa-google"></i> Sign In with Google</button>
+                </div>
+            </div>
+        </section>
+        <section class="features" id="features">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Why TaskLoom?</h2>
+                    <p>Everything you need to capture, plan, and execute — synced securely through Firebase.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-calendar-alt"></i>
                         </div>
+                        <h3>Monthly Calendar View</h3>
+                        <p>Visualize your entire month at a glance with our intuitive calendar interface that makes planning effortless.</p>
                     </div>
-                </div>
-                
-                <!-- Center Section: Month Navigation -->
-                <div class="flex items-center gap-4">
-                    <button onclick="previousMonth()" class="p-3 bg-gradient-to-r from-purple-200 to-purple-300 hover:from-purple-300 hover:to-purple-400 text-purple-700 rounded-xl transition-all duration-200">
-                        ← Previous
-                    </button>
-                    <h2 id="currentMonth" class="text-2xl font-bold text-gray-700 min-w-[200px] text-center"></h2>
-                    <button onclick="nextMonth()" class="p-3 bg-gradient-to-r from-purple-200 to-purple-300 hover:from-purple-300 hover:to-purple-400 text-purple-700 rounded-xl transition-all duration-200">
-                        Next →
-                    </button>
-                </div>
-                
-                <!-- Right Section: Controls -->
-                <div class="flex items-center gap-3">
-                    <!-- Data Management -->
-                    <div class="flex items-center gap-2">
-                        <button onclick="exportData()" class="p-3 bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-white rounded-xl transition-all duration-200 shadow-md" title="Export Data">
-                            📤
-                        </button>
-                        <input type="file" id="importFile" accept=".json" onchange="importData()" class="hidden">
-                        <button onclick="document.getElementById('importFile').click()" class="p-3 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white rounded-xl transition-all duration-200 shadow-md" title="Import Data">
-                            📥
-                        </button>
-                    </div>
-                    
-                    <!-- Theme Toggle -->
-                    <button onclick="toggleTheme()" id="themeToggle" class="p-3 bg-gradient-to-r from-indigo-400 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl transition-all duration-200 shadow-md" title="Toggle Dark Mode">
-                        🌙
-                    </button>
-                    
-                    <!-- Settings -->
-                    <button onclick="toggleSettings()" class="p-3 bg-gradient-to-r from-gray-400 to-gray-500 hover:from-gray-500 hover:to-gray-600 text-white rounded-xl transition-all duration-200 shadow-md" title="Settings">
-                        ⚙️
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Monthly Stats -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="glass-effect rounded-xl p-4 text-center shadow-md">
-                <div class="text-3xl font-bold text-pink-400" id="monthlyTotal">0</div>
-                <div class="text-sm text-gray-600">Total Tasks</div>
-            </div>
-            <div class="glass-effect rounded-xl p-4 text-center shadow-md">
-                <div class="text-3xl font-bold text-green-400" id="monthlyCompleted">0</div>
-                <div class="text-sm text-gray-600">Completed</div>
-            </div>
-            <div class="glass-effect rounded-xl p-4 text-center shadow-md">
-                <div class="text-3xl font-bold text-blue-400" id="activeDays">0</div>
-                <div class="text-sm text-gray-600">Active Days</div>
-            </div>
-            <div class="glass-effect rounded-xl p-4 text-center shadow-md">
-                <div class="text-3xl font-bold text-purple-400" id="completionRate">0%</div>
-                <div class="text-sm text-gray-600">Progress</div>
-            </div>
-        </div>
-
-        <!-- Main Task Management Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <!-- Add Task Panel -->
-            <div class="glass-effect rounded-2xl shadow-lg p-6">
-                <h3 class="text-xl font-bold text-gray-700 mb-4">➕ Add New Task</h3>
-                <div class="space-y-4">
-                    <input 
-                        type="text" 
-                        id="mainTaskInput" 
-                        placeholder="Enter your task..." 
-                        class="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none"
-                        maxlength="100"
-                    >
-                    <select id="mainTaskPriority" class="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none text-gray-700">
-                        <option value="low">🟢 Low Priority</option>
-                        <option value="medium">🟡 Medium Priority</option>
-                        <option value="high">🔴 High Priority</option>
-                    </select>
-                    <input 
-                        type="date" 
-                        id="mainTaskDate" 
-                        class="w-full px-4 py-3 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none"
-                    >
-                    <button onclick="addMainTask()" class="w-full px-4 py-3 bg-gradient-to-r from-pink-400 to-purple-400 hover:from-pink-500 hover:to-purple-500 text-white font-medium rounded-lg transition-all duration-200 shadow-md">
-                        Add Task
-                    </button>
-                </div>
-            </div>
-
-            <!-- Task Statistics -->
-            <div class="glass-effect rounded-2xl shadow-lg p-6">
-                <h3 class="text-xl font-bold text-gray-700 mb-4">📊 Task Overview</h3>
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
-                        <span class="text-gray-700 font-medium">Total Tasks</span>
-                        <span class="text-2xl font-bold text-purple-600" id="mainTotalTasks">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg">
-                        <span class="text-gray-700 font-medium">Pending</span>
-                        <span class="text-2xl font-bold text-orange-600" id="mainPendingTasks">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-                        <span class="text-gray-700 font-medium">Completed</span>
-                        <span class="text-2xl font-bold text-green-600" id="mainCompletedTasks">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg">
-                        <span class="text-gray-700 font-medium">Progress</span>
-                        <span class="text-2xl font-bold text-blue-600" id="mainProgressRate">0%</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Monthly To-Do List -->
-            <div class="glass-effect rounded-2xl shadow-lg p-6">
-                <h3 class="text-xl font-bold text-gray-700 mb-4">📅 Monthly To-Do</h3>
-                
-                <!-- Add Monthly Task -->
-                <div class="mb-4">
-                    <div class="flex gap-2">
-                        <input 
-                            type="text" 
-                            id="monthlyTaskInput" 
-                            placeholder="Add monthly task..." 
-                            class="flex-1 px-3 py-2 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none text-sm"
-                            maxlength="60"
-                        >
-                        <button onclick="addMonthlyTask()" class="px-3 py-2 bg-gradient-to-r from-pink-300 to-pink-400 hover:from-pink-400 hover:to-pink-500 text-white rounded-lg transition-all duration-200 text-sm">
-                            ➕
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Monthly Tasks List -->
-                <div class="space-y-2 max-h-64 overflow-y-auto" id="monthlyTodoList">
-                    <!-- Monthly tasks will be rendered here -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Task List Section -->
-        <div class="glass-effect rounded-2xl shadow-lg p-6 mb-6">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <h3 class="text-2xl font-bold text-gray-700">📋 Task List</h3>
-                
-                <!-- Task Filters -->
-                <div class="flex flex-wrap gap-2">
-                    <button onclick="filterMainTasks('all')" class="main-filter-btn active px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">All Tasks</button>
-                    <button onclick="filterMainTasks('pending')" class="main-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">Pending</button>
-                    <button onclick="filterMainTasks('completed')" class="main-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">Completed</button>
-                    <button onclick="filterMainTasks('high')" class="main-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">🔴 High</button>
-                    <button onclick="filterMainTasks('medium')" class="main-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">🟡 Medium</button>
-                    <button onclick="filterMainTasks('low')" class="main-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">🟢 Low</button>
-                    <button onclick="filterMainTasks('today')" class="main-filter-btn px-4 py-2 rounded-full text-sm font-medium transition-all duration-200">📅 Today</button>
-                </div>
-            </div>
-            
-            <!-- Tasks Container -->
-            <div id="mainTasksList" class="space-y-3">
-                <!-- Main tasks will be rendered here -->
-            </div>
-        </div>
-
-        <!-- Calendar -->
-        <div class="glass-effect rounded-2xl shadow-lg p-6 mb-6">
-            <!-- Days of week header -->
-            <div class="grid grid-cols-7 gap-2 mb-4">
-                <div class="text-center font-semibold text-gray-600 py-2">Sun</div>
-                <div class="text-center font-semibold text-gray-600 py-2">Mon</div>
-                <div class="text-center font-semibold text-gray-600 py-2">Tue</div>
-                <div class="text-center font-semibold text-gray-600 py-2">Wed</div>
-                <div class="text-center font-semibold text-gray-600 py-2">Thu</div>
-                <div class="text-center font-semibold text-gray-600 py-2">Fri</div>
-                <div class="text-center font-semibold text-gray-600 py-2">Sat</div>
-            </div>
-            
-            <!-- Calendar grid -->
-            <div id="calendarGrid" class="grid grid-cols-7 gap-2">
-                <!-- Calendar days will be generated here -->
-            </div>
-        </div>
-
-        <!-- Help Button -->
-        <div class="fixed bottom-6 right-6 z-40">
-            <button onclick="toggleHelpPanel()" id="helpButton" class="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white p-4 rounded-full shadow-lg transition-all duration-200 hover:scale-110">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </button>
-        </div>
-
-        <!-- Settings Panel -->
-        <div id="settingsPanel" class="fixed top-0 right-0 w-96 h-full bg-white shadow-2xl border-l-4 border-purple-500 transform translate-x-full transition-transform duration-300 z-50 overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        ⚙️ TaskLoom Settings
-                    </h2>
-                    <button onclick="toggleSettings()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
-                </div>
-
-                <!-- Theme Settings -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        🎨 Appearance
-                    </h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                            <div>
-                                <div class="font-medium text-gray-700">Dark Mode</div>
-                                <div class="text-sm text-gray-500">Switch between light and dark themes</div>
-                            </div>
-                            <button onclick="toggleTheme()" id="themeToggleSwitch" class="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                                <span id="themeToggleIndicator" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
-                            </button>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-tasks"></i>
                         </div>
+                        <h3>Daily Task Management</h3>
+                        <p>Organize your daily tasks with priority levels, due dates, and progress tracking to stay on top of your workload.</p>
                     </div>
-                </div>
-
-                <!-- Data Management -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        💾 Data Management
-                    </h3>
-                    <div class="space-y-3">
-                        <button onclick="exportData()" class="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 rounded-xl transition-colors duration-200 border border-green-200">
-                            <span class="text-2xl">📤</span>
-                            <div class="text-left">
-                                <div class="font-medium text-green-700">Export Data</div>
-                                <div class="text-sm text-green-600">Download your tasks as JSON file</div>
-                            </div>
-                        </button>
-                        
-                        <button onclick="document.getElementById('importFile').click()" class="w-full flex items-center gap-3 p-4 bg-orange-50 hover:bg-orange-100 rounded-xl transition-colors duration-200 border border-orange-200">
-                            <span class="text-2xl">📥</span>
-                            <div class="text-left">
-                                <div class="font-medium text-orange-700">Import Data</div>
-                                <div class="text-sm text-orange-600">Upload tasks from JSON file</div>
-                            </div>
-                        </button>
-                        
-                        <button onclick="clearAllData()" class="w-full flex items-center gap-3 p-4 bg-red-50 hover:bg-red-100 rounded-xl transition-colors duration-200 border border-red-200">
-                            <span class="text-2xl">🗑️</span>
-                            <div class="text-left">
-                                <div class="font-medium text-red-700">Clear All Data</div>
-                                <div class="text-sm text-red-600">Delete all tasks and reset app</div>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Google Drive Settings -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        ☁️ Google Drive Sync
-                    </h3>
-                    <div class="space-y-3">
-                        <div id="googleStatus" class="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                            <div class="flex items-center gap-3">
-                                <span class="text-2xl">❌</span>
-                                <div>
-                                    <div class="font-medium text-gray-700">Not Connected</div>
-                                    <div class="text-sm text-gray-500">Connect to sync across devices</div>
-                                </div>
-                            </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-cloud"></i>
                         </div>
-                        
-                        <button onclick="toggleHelpPanel()" class="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 rounded-xl transition-colors duration-200 border border-blue-200">
-                            <span class="text-2xl">📖</span>
-                            <div class="text-left">
-                                <div class="font-medium text-blue-700">Setup Instructions</div>
-                                <div class="text-sm text-blue-600">Learn how to connect Google Drive</div>
-                            </div>
-                        </button>
+                        <h3>Firebase Sync</h3>
+                        <p>Automatic background sync to your Firebase account when online. Works offline first.</p>
                     </div>
-                </div>
-
-                <!-- App Information -->
-                <div class="mb-8">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        ℹ️ About
-                    </h3>
-                    <div class="space-y-3">
-                        <div class="p-4 bg-gray-50 rounded-xl border border-gray-200">
-                            <div class="text-sm text-gray-600 space-y-2">
-                                <div><strong>Version:</strong> 2.0.0</div>
-                                <div><strong>Last Updated:</strong> <span id="lastSyncTime">Never</span></div>
-                                <div><strong>Storage:</strong> <span id="storageInfo">Local Browser</span></div>
-                                <div><strong>Total Tasks:</strong> <span id="totalTasksCount">0</span></div>
-                            </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
                         </div>
+                        <h3>Progress Tracking</h3>
+                        <p>Monitor your productivity with detailed statistics and progress reports that help you stay motivated.</p>
                     </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                        ⚡ Quick Actions
-                    </h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="goToToday()" class="p-3 bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors duration-200 border border-purple-200 text-center">
-                            <div class="text-xl mb-1">📅</div>
-                            <div class="text-sm font-medium text-purple-700">Go to Today</div>
-                        </button>
-                        
-                        <button onclick="showStats()" class="p-3 bg-indigo-50 hover:bg-indigo-100 rounded-xl transition-colors duration-200 border border-indigo-200 text-center">
-                            <div class="text-xl mb-1">📊</div>
-                            <div class="text-sm font-medium text-indigo-700">View Stats</div>
-                        </button>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <h3>Calendar Events</h3>
+                        <p>Create Google Calendar events from tasks with one click (grants Calendar permission during sign in).</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-moon"></i>
+                        </div>
+                        <h3>Dark Mode</h3>
+                        <p>Reduce eye strain and save battery with our beautifully designed dark mode that's easy on the eyes.</p>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Help Panel -->
-        <div id="helpPanel" class="fixed bottom-0 left-0 right-0 bg-white shadow-2xl border-t-4 border-blue-500 transform translate-y-full transition-transform duration-300 z-50 max-h-[80vh] overflow-y-auto">
-            <div class="container mx-auto px-6 py-6 max-w-4xl">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                        🔧 TaskLoom - Google Drive Setup Instructions
-                    </h2>
-                    <button onclick="toggleHelpPanel()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
-                </div>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Quick Start -->
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
-                        <h3 class="text-xl font-bold text-green-800 mb-4 flex items-center gap-2">
-                            🚀 Quick Start Guide
-                        </h3>
-                        <div class="space-y-3 text-sm text-green-700">
-                            <div class="flex items-start gap-3">
-                                <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">1</span>
-                                <div>
-                                    <strong>Go to Google Cloud Console:</strong><br>
-                                    <a href="https://console.cloud.google.com" target="_blank" class="text-blue-600 hover:underline">console.cloud.google.com</a>
-                                </div>
-                            </div>
-                            <div class="flex items-start gap-3">
-                                <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">2</span>
-                                <div>
-                                    <strong>Create a new project</strong> or select existing one
-                                </div>
-                            </div>
-                            <div class="flex items-start gap-3">
-                                <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">3</span>
-                                <div>
-                                    <strong>Enable Google Drive API</strong> in the API Library
-                                </div>
-                            </div>
-                            <div class="flex items-start gap-3">
-                                <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">4</span>
-                                <div>
-                                    <strong>Create credentials</strong> (OAuth 2.0 Client ID)
-                                </div>
-                            </div>
-                            <div class="flex items-start gap-3">
-                                <span class="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">5</span>
-                                <div>
-                                    <strong>Replace the demo credentials</strong> in the code
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Benefits -->
-                    <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-6 border border-indigo-200">
-                        <h3 class="text-xl font-bold text-indigo-800 mb-4 flex items-center gap-2">
-                            ✨ Benefits of Google Drive Sync
-                        </h3>
-                        <div class="grid grid-cols-1 gap-4 text-sm text-indigo-700">
-                            <div class="text-center">
-                                <div class="text-3xl mb-2">☁️</div>
-                                <h4 class="font-semibold mb-1">Cloud Backup</h4>
-                                <p>Your tasks are safely stored in Google Drive and won't be lost if you clear browser data.</p>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl mb-2">🔄</div>
-                                <h4 class="font-semibold mb-1">Multi-Device Sync</h4>
-                                <p>Access your tasks from any device - phone, tablet, or computer - always in sync.</p>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-3xl mb-2">🔒</div>
-                                <h4 class="font-semibold mb-1">Secure & Private</h4>
-                                <p>Data is stored in your personal Google Drive folder, only you can access it.</p>
-                            </div>
-                        </div>
+        </section>
+        <section class="how-it-works">
+            <div class="container how-it-works-inner">
+                <h2>How It Works</h2>
+                <ol>
+                    <li><strong>Sign in</strong> with your Google account (one tap).</li>
+                    <li><strong>Load / Start</strong> – existing tasks appear or you begin blank.</li>
+                    <li><strong>Plan</strong> Monthly goals & break them into Daily tasks.</li>
+                    <li><strong>Schedule</strong> – click the 📅 button to create a Calendar event.</li>
+                    <li><strong>Sync</strong> – saved locally first, then auto‑syncs to cloud when online.</li>
+                </ol>
+                <p class="offline-note">Stay productive offline – changes sync the moment you're reconnected.</p>
+            </div>
+        </section>
+        <section class="cta-section">
+            <div class="container">
+                <h2>Get Started</h2>
+                <p>Sign in to start planning your month & days.</p>
+                <button id="googleAuthBtnCta" class="btn btn-primary"><i class="fab fa-google"></i> Sign In</button>
+            </div>
+        </section>
+    </main>
+    <div id="notification-container"></div>
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h3>TaskLoom</h3>
+                    <p>Weave your tasks into perfect productivity with our intuitive task management calendar.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
                     </div>
                 </div>
-
-                <!-- Footer -->
-                <div class="mt-6 pt-4 border-t border-gray-200 text-center text-sm text-gray-600">
-                    <p>💡 <strong>Need more help?</strong> Check the <a href="https://developers.google.com/drive/api/quickstart/js" target="_blank" class="text-blue-600 hover:underline">Google Drive API documentation</a> for detailed guides.</p>
+                <div class="footer-column">
+                    <h3>Product</h3>
+                    <ul class="footer-links">
+                        <li><a href="calendar.html">Calendar</a></li>
+                        <li><a href="daily.html">Daily Tasks</a></li>
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Updates</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Tutorials</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Company</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                    </ul>
                 </div>
             </div>
-        </div>
-
-        <!-- Task Modal -->
-        <div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
-            <div class="glass-effect rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 id="modalTitle" class="text-2xl font-bold text-gray-700"></h3>
-                        <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
-                    </div>
-                    
-                    <!-- Add Task Form -->
-                    <div class="mb-6">
-                        <div class="flex flex-col gap-3 mb-3">
-                            <div class="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    id="newTaskInput" 
-                                    placeholder="Add a new task..." 
-                                    class="flex-1 px-4 py-2 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none"
-                                    maxlength="50"
-                                >
-                                <button onclick="addDailyTask()" class="px-4 py-2 bg-gradient-to-r from-pink-300 to-pink-400 hover:from-pink-400 hover:to-pink-500 text-white rounded-lg transition-all duration-200">
-                                    ➕
-                                </button>
-                            </div>
-                            <select id="taskPriority" class="px-4 py-2 border border-pink-200 rounded-lg focus:ring-2 focus:ring-pink-300 focus:border-transparent outline-none text-gray-700">
-                                <option value="low">🟢 Low Priority</option>
-                                <option value="medium">🟡 Medium Priority</option>
-                                <option value="high">🔴 High Priority</option>
-                            </select>
-                        </div>
-                        <div class="text-xs text-gray-500 mb-2">
-                            <span id="taskCount">0</span>/10 tasks for this day
-                        </div>
-                    </div>
-                    
-                    <!-- Task Filters -->
-                    <div class="mb-4">
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            <button onclick="filterDailyTasks('all')" class="daily-filter-btn active px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200">All</button>
-                            <button onclick="filterDailyTasks('pending')" class="daily-filter-btn px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200">Pending</button>
-                            <button onclick="filterDailyTasks('completed')" class="daily-filter-btn px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200">Completed</button>
-                            <button onclick="filterDailyTasks('high')" class="daily-filter-btn px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200">🔴 High</button>
-                            <button onclick="filterDailyTasks('medium')" class="daily-filter-btn px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200">🟡 Medium</button>
-                            <button onclick="filterDailyTasks('low')" class="daily-filter-btn px-3 py-1 rounded-full text-sm font-medium transition-colors duration-200">🟢 Low</button>
-                        </div>
-                        
-                        <!-- Daily Stats -->
-                        <div class="grid grid-cols-4 gap-2 text-center text-xs">
-                            <div class="bg-purple-50 rounded-lg p-2">
-                                <div class="font-bold text-purple-600" id="dailyTotal">0</div>
-                                <div class="text-gray-600">Total</div>
-                            </div>
-                            <div class="bg-orange-50 rounded-lg p-2">
-                                <div class="font-bold text-orange-600" id="dailyPending">0</div>
-                                <div class="text-gray-600">Pending</div>
-                            </div>
-                            <div class="bg-green-50 rounded-lg p-2">
-                                <div class="font-bold text-green-600" id="dailyCompleted">0</div>
-                                <div class="text-gray-600">Done</div>
-                            </div>
-                            <div class="bg-blue-50 rounded-lg p-2">
-                                <div class="font-bold text-blue-600" id="dailyProgress">0%</div>
-                                <div class="text-gray-600">Progress</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Tasks List -->
-                    <div id="dailyTasksList" class="space-y-2">
-                        <!-- Daily tasks will be rendered here -->
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer -->
-    <footer class="glass-effect mt-12 border-t-2 border-purple-200">
-        <div class="container mx-auto px-4 py-12 max-w-7xl">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-                <!-- Company Section -->
-                <div class="text-center md:text-left">
-                    <div class="mb-4">
-                        <h3 class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex items-center justify-center md:justify-start gap-2">
-                            🌐 PluxCore Technologies
-                        </h3>
-                        <p class="text-lg text-gray-600 font-semibold mb-2">Innovating Your Digital Future</p>
-                        <p class="text-gray-600 text-sm leading-relaxed">
-                            Empowering businesses with cutting-edge digital solutions and innovative software.
-                        </p>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <p class="text-gray-600 flex items-center justify-center md:justify-start gap-2">
-                            🌐 Visit: <a href="https://www.pluxcore.com" target="_blank" class="text-blue-500 hover:text-blue-700 font-medium hover:underline transition-colors duration-200">www.pluxcore.com</a>
-                        </p>
-                    </div>
-                </div>
-                
-                <!-- Developer Section -->
-                <div class="text-center">
-                    <h4 class="text-lg font-bold text-gray-700 mb-4">Development</h4>
-                    <div class="mb-4">
-                        <p class="text-gray-600 mb-1 flex items-center justify-center gap-2">
-                            👨‍💻 Developed by
-                        </p>
-                        <p class="font-bold text-purple-600 text-lg">Roshith Priyadarshana</p>
-                        <p class="text-gray-500 text-sm">Full-Stack Developer</p>
-                    </div>
-                </div>
-                
-                <!-- Connect Section -->
-                <div class="text-center md:text-right">
-                    <h4 class="text-lg font-bold text-gray-700 mb-4">Connect</h4>
-                    
-                    <!-- Quick Links -->
-                    <div class="mb-4 space-y-2">
-                        <div class="flex items-center justify-center md:justify-end gap-4 text-sm">
-                            <a href="#" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
-                                ❓ Help & Support
-                            </a>
-                            <a href="https://www.pluxcore.com" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors duration-200 flex items-center gap-1">
-                                🌐 PluxCore Website
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <!-- Social Media Icons -->
-                    <div class="flex justify-center md:justify-end items-center gap-3 mb-4">
-                        <a href="#" target="_blank" class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105" title="Facebook">
-                            <span class="text-lg">f</span>
-                        </a>
-                        <a href="#" target="_blank" class="w-10 h-10 bg-sky-500 hover:bg-sky-600 text-white rounded-lg flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105" title="Twitter">
-                            <span class="text-lg">𝕏</span>
-                        </a>
-                        <a href="#" target="_blank" class="w-10 h-10 bg-blue-700 hover:bg-blue-800 text-white rounded-lg flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105" title="LinkedIn">
-                            <span class="text-lg">in</span>
-                        </a>
-                        <a href="#" target="_blank" class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-lg flex items-center justify-center transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105" title="Instagram">
-                            <span class="text-lg">📷</span>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Divider -->
-            <div class="border-t border-gray-300 pt-6">
-                <!-- Copyright -->
-                <div class="text-center mb-4">
-                    <p class="text-gray-700 font-medium">© 2025 PluxCore Technologies. All rights reserved.</p>
-                </div>
-                
-                <!-- App Features -->
-                <div class="flex flex-wrap justify-center items-center gap-6 text-sm text-gray-600">
-                    <div class="flex items-center gap-2">
-                        <span class="text-lg">🗓️</span>
-                        <span class="font-medium">TaskLoom v2.0</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-lg">🔒</span>
-                        <span>Privacy First</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-lg">☁️</span>
-                        <span>Cloud Sync</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-lg">📱</span>
-                        <span>Responsive</span>
-                    </div>
-                </div>
+            <div class="footer-bottom">
+                <p>&copy; 2023 TaskLoom. All rights reserved.</p>
             </div>
         </div>
     </footer>
-
-    <!-- JavaScript Files -->
     <script src="assets/js/config.js"></script>
     <script src="assets/js/services/NotificationService.js"></script>
     <script src="assets/js/services/StorageService.js"></script>
-    <script src="assets/js/services/UIService.js"></script>
-    <script src="assets/js/services/GoogleDriveService.js"></script>
-    <script src="assets/js/components/AppState.js"></script>
-    <script src="assets/js/components/TaskManager.js"></script>
-    <script src="assets/js/components/StatsManager.js"></script>
-    <script src="assets/js/components/CalendarRenderer.js"></script>
-    <script src="assets/js/components/TaskRenderer.js"></script>
-    <script src="assets/js/app.js"></script>
+    <script src="assets/js/services/FirebaseService.js"></script>
+    <script src="assets/js/services/CalendarService.js"></script>
+    <script src="assets/js/main.js"></script>
 </body>
 </html>
