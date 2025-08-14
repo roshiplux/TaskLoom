@@ -1,113 +1,150 @@
-# TaskLoom - Organized Your Works
+# TaskLoom
 
-## Overview
-TaskLoom has been refactored into a clean, modular architecture with separated concerns for better maintainability and scalability.
+Modern multi‑page task & productivity app with:
+* Monthly calendar + daily task manager
+* Local + Google Drive backup sync
+* Optional Firebase (Auth + Firestore) snapshot & realtime sync
+* On‑demand Google Calendar event creation per task (incremental scope)
+* Profile dropdown (switch account, manual sync, realtime toggle)
 
-## File Structure
+---
+## Current Structure
 
 ```
 TaskLoom/
-├── index.html              # Original monolithic file (backup)
-├── index-new.html          # New organized HTML structure
+├── index.html          # Landing (auto-skipped after first sign-in unless ?showLanding)
+├── calendar.html       # Monthly calendar + monthly TODO list
+├── daily.html          # Daily task manager
 ├── assets/
 │   ├── css/
-│   │   └── styles.css      # All CSS styles
+│   │   └── style.css
 │   └── js/
-│       ├── config.js       # Configuration and API keys
-│       ├── app.js          # Main application initialization
-│       ├── components/     # UI Components
-│       │   ├── AppState.js         # Application state management
-│       │   ├── CalendarRenderer.js # Calendar display logic
-│       │   ├── StatsManager.js     # Statistics calculations
-│       │   ├── TaskManager.js      # Task CRUD operations
-│       │   └── TaskRenderer.js     # Task display logic
-│       ├── services/       # Business Logic Services
-│       │   ├── GoogleDriveService.js # Google Drive integration
-│       │   ├── NotificationService.js # User notifications
-│       │   ├── StorageService.js     # Data persistence
-│       │   └── UIService.js          # UI helper functions
-│       └── utils/          # Utility functions (future)
+│       ├── config.js
+│       ├── main.js                 # Global bootstrapping (Google, Firebase hooks, menu actions)
+│       ├── calendar.js             # Calendar + monthly tasks UI
+│       ├── daily.js                # Daily tasks UI
+│       └── services/
+│           ├── StorageService.js   # Unified local data (monthlyTasks[], dailyTasks{date:[]})
+│           ├── GoogleDriveService.js # Drive appDataFolder sync + auth UI
+│           ├── FirebaseService.js  # Firebase Auth + Firestore (snapshot + realtime)
+│           ├── CalendarService.js  # Incremental Google Calendar API usage
+│           └── NotificationService.js
 ```
 
-## Key Improvements
+Legacy / experimental files (may be pruned later): `UIService.js`, `debug-google.html`.
 
-### 1. **Separation of Concerns**
-- **HTML**: Pure structure and content
-- **CSS**: All styling in dedicated file
-- **JavaScript**: Modular components and services
+---
+## Data Model
 
-### 2. **Modular Architecture**
-- **Services**: Handle business logic (Google Drive, Storage, etc.)
-- **Components**: Manage UI components (Calendar, Tasks, Stats)
-- **Configuration**: Centralized settings and API keys
-
-### 3. **Better Maintainability**
-- Each module has a single responsibility
-- Easy to locate and modify specific functionality
-- Clear dependencies between modules
-
-### 4. **Scalability**
-- Easy to add new features without affecting existing code
-- Reusable components and services
-- Clean API between modules
-
-## Usage
-
-### Development
-1. Use `index-new.html` as your main file
-2. Modify individual JavaScript/CSS files as needed
-3. Keep `index.html` as backup reference
-
-### Configuration
-Update your Google API credentials in `assets/js/config.js`:
-```javascript
-const CONFIG = {
-    GOOGLE: {
-        CLIENT_ID: 'your-client-id',
-        API_KEY: 'your-api-key'
+```jsonc
+{
+    "monthlyTasks": [ { "text": "Pay rent", "done": false } ],
+    "dailyTasks": {
+        "2025-08-12": [ { "text": "Email client", "done": false, "category": "work", "calendarEventId": "optional" } ]
     }
-    // ... other settings
-};
+}
 ```
 
-### Adding New Features
-1. **New Service**: Add to `assets/js/services/`
-2. **New Component**: Add to `assets/js/components/`
-3. **New Styles**: Add to `assets/css/styles.css`
-4. **Import**: Include in `index-new.html`
+Stored locally in `localStorage` under `taskloomAppData_v3` then synced:
+* Google Drive: single JSON file in `appDataFolder` (`taskloom-data-v3.json`)
+* Firestore: single `appData` document per user (for now)
 
-## Migration Steps
+---
+## Sync Layers
 
-1. **Backup**: Keep `index.html` as backup
-2. **Deploy**: Replace with `index-new.html` structure
-3. **Test**: Verify all functionality works
-4. **Update**: Modify individual files as needed
+| Layer | Purpose | Trigger | Notes |
+|-------|---------|---------|-------|
+| Local Storage | Fast offline cache | Every CRUD | Source of truth in browser session |
+| Google Drive  | Off-device backup  | Debounced after changes / manual | Minimal scopes; polling interval configurable |
+| Firestore (optional) | Cross-device realtime | Manual enable (Realtime toggle) | Realtime listener merges remote -> local |
+| Calendar (optional) | Individual task scheduling | Per-task “📅” button | Incremental consent; stores `calendarEventId` |
 
-## Benefits
+Conflict strategy (current): last writer wins. (Enhancements: version & merge roadmap.)
 
-- **Faster Development**: Easier to find and modify code
-- **Better Collaboration**: Clear module boundaries
-- **Easier Debugging**: Isolated functionality
-- **Performance**: Better caching with separate files
-- **Professional**: Industry-standard file organization
+---
+## Auth & Permissions
 
-## File Descriptions
+Base scopes (Drive + profile) loaded at initial sign-in. Calendar scope requested only when the user first creates a Calendar event. Firebase Auth (if configured) uses Google provider; Firestore operations require successful Firebase login.
 
-### Core Files
-- `config.js`: API keys, app settings, storage keys
-- `app.js`: Application initialization and global functions
+---
+## Configuration (`assets/js/config.js`)
 
-### Services
-- `GoogleDriveService.js`: Google Drive sync functionality
-- `StorageService.js`: Local storage and data import/export
-- `NotificationService.js`: User notification system
-- `UIService.js`: UI helper functions and theme management
+Fill in:
+```js
+FIREBASE: {
+    API_KEY: '...',
+    AUTH_DOMAIN: 'your-project.firebaseapp.com',
+    PROJECT_ID: 'your-project',
+    STORAGE_BUCKET: 'your-project.appspot.com',
+    MESSAGING_SENDER_ID: '...',
+    APP_ID: '...'
+}
+```
+Do NOT check real secrets into public repos unless they are client public keys (Firebase web keys are public but still treat with care).
 
-### Components
-- `TaskManager.js`: Task CRUD operations and filtering
-- `CalendarRenderer.js`: Calendar display and interaction
-- `TaskRenderer.js`: Task list rendering
-- `StatsManager.js`: Statistics calculation and display
-- `AppState.js`: Application state and navigation
+---
+## Key Services Summary
 
-This organization makes TaskLoom more professional, maintainable, and easier to extend with new features!
+| Service | Highlights |
+|---------|-----------|
+| StorageService | Unified in-memory + localStorage; fires events (`data-imported`, etc.). |
+| GoogleDriveService | GIS token client, session token reuse, file upload/download, polling. |
+| FirebaseService | Lazy loads SDK, Auth state events, snapshot save/load, realtime subscription. |
+| CalendarService | Incremental scope request, POST event to primary calendar. |
+| NotificationService | Lightweight DOM toast messages. |
+
+---
+## User Flow
+1. Open `index.html` (skipped to `calendar.html` after first sign-in unless `?showLanding`).
+2. Sign in with Google (Drive backup ready).
+3. (Optional) Enable Realtime → Firebase sign-in + listener.
+4. Add tasks (daily/monthly) → automatic local + queued Drive sync.
+5. Click 📅 on a daily task → create Calendar event (prompts for Calendar scope first time).
+6. Use profile menu for manual sync, realtime toggle, switch account, sign out.
+
+---
+## Development Quick Start
+
+1. Serve statically (e.g. VS Code Live Server) so OAuth origin matches allowed list.
+2. Set Google OAuth Client ID + API key in config.
+3. (Optional) Add your domain to Google Cloud Console + enable Drive & Calendar APIs.
+4. (Optional) Create Firebase project & paste config values.
+5. Open `calendar.html` → add tasks → verify Drive file appears (check Cloud Console / API Explorer).
+
+---
+## Incremental Calendar Scope Logic
+
+Calendar scope isn’t requested at initial sign-in to reduce consent friction. First Calendar event creation triggers `tokenClient.requestAccessToken` with extra scope. UI remains functional if user declines (feature-level failure only).
+
+---
+## Realtime Mode
+
+Enabled via profile menu toggle:
+* Starts Firestore listener on `appData` doc.
+* Incoming snapshot replaces local data (simple overwrite).
+* Disable to stop listener & reduce quota.
+
+Future enhancements: granular patching, optimistic merges, presence tracking.
+
+---
+## Roadmap Ideas
+* Task labels / priorities with color legend
+* Offline mutation queue -> Firestore merge timestamps
+* Calendar bidirectional sync (update / delete events)
+* Per‑task reminders via Cloud Functions + FCM
+* Multi-user shared calendars / task boards
+* Diff-based Drive sync to reduce upload size
+
+---
+## Contributing
+Open an issue or submit PRs on feature branches (e.g. `feat/*`). Keep services focused; avoid coupling UI and sync logic.
+
+---
+## License
+MIT (add a LICENSE file if distributing).
+
+---
+## Disclaimer
+This is a client-side application; avoid storing sensitive data without adding proper encryption & backend validation.
+
+Enjoy weaving your tasks! 🧵
