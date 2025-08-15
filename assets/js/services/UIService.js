@@ -1,4 +1,4 @@
-// UI Service Module
+// UI Service Modulewh
 class UIService {
     // Open day modal
     static openDayModal(date) {
