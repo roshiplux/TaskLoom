@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .test-section { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #007acc; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; background: #fff3cd; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007acc; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        code { background: #f1f1f1; padding: 2px 4px; border-radius: 3px; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🔧 TaskLoom Firebase Connectivity Test</h1>
+    
+    <div class="test-section">
+        <h3>1. Script Loading Test</h3>
+        <div id="scriptsTest">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Firebase Configuration Test</h3>
+        <div id="configTest">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Firebase Connection Test</h3>
+        <div id="connectionTest">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Domain Authorization Test</h3>
+        <div id="domainTest">Testing...</div>
+    </div>
+    
+    <div class="test-section">
+        <h3>5. Manual Sign-In Test</h3>
+        <button id="testSignIn" class="btn-primary">Test Google Sign-In</button>
+        <div id="signInResult"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    
+    <script>
+        // Test 1: Script Loading
+        function testScripts() {
+            const div = document.getElementById('scriptsTest');
+            if (typeof firebase !== 'undefined') {
+                div.innerHTML = `✅ <strong>SUCCESS:</strong> Firebase SDK loaded (v${firebase.SDK_VERSION || 'unknown'})`;
+                div.parentElement.classList.add('success');
+            } else {
+                div.innerHTML = `❌ <strong>ERROR:</strong> Firebase SDK not loaded`;
+                div.parentElement.classList.add('error');
+            }
+        }
+        
+        // Test 2: Configuration
+        function testConfig() {
+            const div = document.getElementById('configTest');
+            
+            // Basic Firebase config
+            const firebaseConfig = {
+                apiKey: 'AIzaSyBKxSTOlICKjzbGiD661xA9CO-Ejz6I__0',
+                authDomain: 'taskloomapp.firebaseapp.com',
+                projectId: 'taskloomapp',
+                storageBucket: 'taskloomapp.appspot.com',
+                messagingSenderId: '54579600666',
+                appId: '1:54579600666:web:df54750c40d8eb54cde0a3'
+            };
+            
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                div.innerHTML = `✅ <strong>SUCCESS:</strong> Firebase initialized<br>
+                    <small>Project: ${firebaseConfig.projectId}<br>
+                    Auth Domain: ${firebaseConfig.authDomain}</small>`;
+                div.parentElement.classList.add('success');
+                return true;
+            } catch (error) {
+                div.innerHTML = `❌ <strong>ERROR:</strong> Firebase initialization failed<br>
+                    <small>${error.message}</small>`;
+                div.parentElement.classList.add('error');
+                return false;
+            }
+        }
+        
+        // Test 3: Connection
+        function testConnection() {
+            const div = document.getElementById('connectionTest');
+            
+            try {
+                const auth = firebase.auth();
+                div.innerHTML = `✅ <strong>SUCCESS:</strong> Firebase Auth service connected<br>
+                    <small>Current user: ${auth.currentUser ? auth.currentUser.email : 'None (not signed in)'}</small>`;
+                div.parentElement.classList.add('success');
+                return true;
+            } catch (error) {
+                div.innerHTML = `❌ <strong>ERROR:</strong> Firebase Auth connection failed<br>
+                    <small>${error.message}</small>`;
+                div.parentElement.classList.add('error');
+                return false;
+            }
+        }
+        
+        // Test 4: Domain Authorization
+        function testDomain() {
+            const div = document.getElementById('domainTest');
+            const currentDomain = window.location.origin;
+            
+            div.innerHTML = `
+                <strong>Current Domain:</strong> <code>${currentDomain}</code><br>
+                <strong>Status:</strong> 
+                ${currentDomain.includes('localhost') || currentDomain.includes('127.0.0.1') ? 
+                    '⚠️ <strong>WARNING:</strong> Local development domain. May need authorization in Firebase Console.' :
+                    '✅ Production domain should be authorized.'
+                }<br>
+                <small>If sign-in fails with "unauthorized-domain", add <code>${currentDomain}</code> to Firebase Console → Authentication → Settings → Authorized domains</small>
+            `;
+            div.parentElement.classList.add(currentDomain.includes('localhost') || currentDomain.includes('127.0.0.1') ? 'warning' : 'success');
+        }
+        
+        // Test 5: Manual Sign-In
+        function setupSignInTest() {
+            document.getElementById('testSignIn').addEventListener('click', async () => {
+                const button = document.getElementById('testSignIn');
+                const result = document.getElementById('signInResult');
+                
+                try {
+                    button.disabled = true;
+                    button.textContent = 'Testing Sign-In...';
+                    result.innerHTML = '<em>Starting Google OAuth popup...</em>';
+                    
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    provider.addScope('profile');
+                    provider.addScope('email');
+                    
+                    const authResult = await firebase.auth().signInWithPopup(provider);
+                    const user = authResult.user;
+                    
+                    result.innerHTML = `
+                        <div style="color: #28a745; margin-top: 10px;">
+                            <strong>✅ SIGN-IN SUCCESS!</strong><br>
+                            <strong>Name:</strong> ${user.displayName}<br>
+                            <strong>Email:</strong> ${user.email}<br>
+                            <strong>UID:</strong> ${user.uid}<br>
+                            <small>OAuth popup worked correctly!</small>
+                        </div>
+                    `;
+                    button.textContent = 'Sign-In Successful!';
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-success');
+                    
+                } catch (error) {
+                    result.innerHTML = `
+                        <div style="color: #dc3545; margin-top: 10px;">
+                            <strong>❌ SIGN-IN FAILED</strong><br>
+                            <strong>Error Code:</strong> ${error.code}<br>
+                            <strong>Error Message:</strong> ${error.message}<br>
+                            <small>${getErrorAdvice(error.code)}</small>
+                        </div>
+                    `;
+                    button.disabled = false;
+                    button.textContent = 'Try Sign-In Again';
+                    button.classList.remove('btn-primary');
+                    button.classList.add('btn-danger');
+                }
+            });
+        }
+        
+        function getErrorAdvice(errorCode) {
+            switch(errorCode) {
+                case 'auth/unauthorized-domain':
+                    return 'Add this domain to Firebase Console authorized domains.';
+                case 'auth/popup-blocked':
+                    return 'Browser blocked the popup. Allow popups for this site.';
+                case 'auth/popup-closed-by-user':
+                    return 'You closed the popup before completing sign-in.';
+                case 'auth/network-request-failed':
+                    return 'Network error. Check your internet connection.';
+                default:
+                    return 'Check Firebase Console settings and API keys.';
+            }
+        }
+        
+        // Run all tests
+        document.addEventListener('DOMContentLoaded', () => {
+            testScripts();
+            
+            setTimeout(() => {
+                if (testConfig()) {
+                    setTimeout(() => {
+                        if (testConnection()) {
+                            testDomain();
+                            setupSignInTest();
+                        }
+                    }, 500);
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

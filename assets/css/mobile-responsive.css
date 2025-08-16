@@ -497,20 +497,49 @@ nav {
 }
 
 /* ========================================
+   MOBILE SPACING OPTIMIZATIONS
+   ======================================== */
+
+/* Reduce excessive bottom spacing on mobile */
+@media (max-width: 767px) {
+    body {
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    /* Ensure footer sticks to content without extra space */
+    main, .main-content {
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
+    
+    /* Optimize section spacing for mobile */
+    section {
+        margin-bottom: 20px; /* Reduced from larger values */
+    }
+    
+    /* Reduce hero section bottom spacing */
+    .hero, .hero-section {
+        margin-bottom: 20px;
+        padding-bottom: 20px;
+    }
+}
+
+/* ========================================
    FOOTER IMPROVEMENTS
    ======================================== */
 
 footer {
     background-color: var(--text-color);
     color: white;
-    padding: 40px 0 20px;
+    padding: 20px 0 10px; /* Reduced padding for mobile */
 }
 
 .footer-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 32px;
-    margin-bottom: 32px;
+    gap: 20px; /* Reduced gap for mobile */
+    margin-bottom: 20px; /* Reduced margin for mobile */
 }
 
 .footer-column h3 {
@@ -566,7 +595,7 @@ footer {
 
 .footer-bottom {
     text-align: center;
-    padding-top: 20px;
+    padding-top: 15px; /* Reduced padding for mobile */
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     color: #94a3b8;
     font-size: 0.9rem;
@@ -574,20 +603,34 @@ footer {
 
 /* Desktop footer */
 @media (min-width: 640px) {
+    footer {
+        padding: 30px 0 15px; /* Medium padding for tablets */
+    }
+    
     .footer-grid {
         grid-template-columns: repeat(2, 1fr);
-        gap: 40px;
+        gap: 30px;
+        margin-bottom: 25px;
+    }
+    
+    .footer-bottom {
+        padding-top: 18px;
     }
 }
 
 @media (min-width: 1024px) {
     footer {
-        padding: 60px 0 30px;
+        padding: 60px 0 30px; /* Full padding for desktop */
     }
     
     .footer-grid {
         grid-template-columns: repeat(4, 1fr);
         gap: 48px;
+        margin-bottom: 32px;
+    }
+    
+    .footer-bottom {
+        padding-top: 20px;
     }
 }
 

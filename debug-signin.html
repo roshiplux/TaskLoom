@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskLoom Sign-In Debug</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug-section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        button { padding: 12px 24px; background: #4285F4; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #3367d6; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        #status { margin: 10px 0; font-weight: bold; }
+        .error { color: red; }
+        .success { color: green; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>TaskLoom Sign-In Debug Page</h1>
+    
+    <div class="debug-section">
+        <h2>System Status</h2>
+        <div id="status">Checking system...</div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Sign-In Test</h2>
+        <button id="googleAuthBtnTest">
+            <i class="fab fa-google"></i> Test Sign In with Google
+        </button>
+        <div id="authResult" style="margin-top: 10px;"></div>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Console Logs</h2>
+        <div id="logs" style="font-family: monospace; white-space: pre-wrap;"></div>
+    </div>
+
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/services/FirebaseService.js"></script>
+    
+    <script>
+        // Enhanced logging
+        const logDiv = document.getElementById('logs');
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            logDiv.textContent += '[LOG] ' + args.join(' ') + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            logDiv.textContent += '[ERROR] ' + args.join(' ') + '\n';
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        // Status updates
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = type;
+            console.log('Status: ' + message);
+        }
+        
+        // Debug authentication
+        async function initDebugAuth() {
+            try {
+                updateStatus('Step 1: Checking dependencies...', 'info');
+                
+                // Check if CONFIG is available
+                if (typeof CONFIG === 'undefined') {
+                    throw new Error('CONFIG not loaded - check config.js');
+                }
+                console.log('CONFIG loaded:', CONFIG.FIREBASE);
+                
+                updateStatus('Step 2: Checking Firebase SDK...', 'info');
+                
+                // Check if Firebase is available
+                if (typeof firebase === 'undefined') {
+                    throw new Error('Firebase SDK not loaded - check script tags');
+                }
+                console.log('Firebase SDK loaded, version:', firebase.SDK_VERSION);
+                
+                updateStatus('Step 3: Initializing Firebase...', 'info');
+                
+                // Initialize Firebase manually to check for errors
+                try {
+                    const firebaseConfig = {
+                        apiKey: CONFIG.FIREBASE.API_KEY,
+                        authDomain: CONFIG.FIREBASE.AUTH_DOMAIN,
+                        projectId: CONFIG.FIREBASE.PROJECT_ID,
+                        storageBucket: CONFIG.FIREBASE.STORAGE_BUCKET,
+                        messagingSenderId: CONFIG.FIREBASE.MESSAGING_SENDER_ID,
+                        appId: CONFIG.FIREBASE.APP_ID
+                    };
+                    
+                    // Check if already initialized
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                        console.log('Firebase initialized successfully');
+                    } else {
+                        console.log('Firebase already initialized');
+                    }
+                } catch (firebaseError) {
+                    throw new Error('Firebase init failed: ' + firebaseError.message);
+                }
+                
+                updateStatus('Step 4: Setting up Auth provider...', 'info');
+                
+                // Set up Google Auth provider
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.addScope('profile');
+                provider.addScope('email');
+                console.log('Google Auth provider created');
+                
+                updateStatus('Auth system ready for testing', 'success');
+                
+                // Set up button click handler
+                document.getElementById('googleAuthBtnTest').addEventListener('click', async () => {
+                    try {
+                        updateStatus('Starting Google sign-in...', 'info');
+                        const button = document.getElementById('googleAuthBtnTest');
+                        button.disabled = true;
+                        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+                        
+                        console.log('Attempting signInWithPopup...');
+                        console.log('Current domain:', window.location.origin);
+                        
+                        const result = await firebase.auth().signInWithPopup(provider);
+                        const user = result.user;
+                        
+                        updateStatus('Sign-in successful!', 'success');
+                        console.log('User signed in:', user.email);
+                        
+                        document.getElementById('authResult').innerHTML = `
+                            <div class="success">
+                                <h3>Sign-in Success!</h3>
+                                <p><strong>Name:</strong> ${user.displayName}</p>
+                                <p><strong>Email:</strong> ${user.email}</p>
+                                <p><strong>UID:</strong> ${user.uid}</p>
+                                <p><strong>Domain:</strong> ${window.location.origin}</p>
+                            </div>
+                        `;
+                        
+                        button.innerHTML = '<i class="fab fa-google"></i> Signed In Successfully';
+                        
+                    } catch (error) {
+                        console.error('Sign-in error details:', error);
+                        console.error('Error code:', error.code);
+                        console.error('Error message:', error.message);
+                        
+                        updateStatus('Sign-in failed: ' + error.message, 'error');
+                        
+                        let errorDetails = `
+                            <div class="error">
+                                <h3>Sign-in Error:</h3>
+                                <p><strong>Code:</strong> ${error.code}</p>
+                                <p><strong>Message:</strong> ${error.message}</p>
+                                <p><strong>Domain:</strong> ${window.location.origin}</p>
+                        `;
+                        
+                        if (error.code === 'auth/unauthorized-domain') {
+                            errorDetails += `
+                                <h4>Domain Authorization Issue:</h4>
+                                <p>This domain (${window.location.origin}) is not authorized for OAuth.</p>
+                                <p>Add this domain to Firebase Console → Authentication → Settings → Authorized domains</p>
+                            `;
+                        }
+                        
+                        errorDetails += '</div>';
+                        
+                        document.getElementById('authResult').innerHTML = errorDetails;
+                        
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fab fa-google"></i> Try Again';
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Debug auth init error:', error);
+                updateStatus('Initialization failed: ' + error.message, 'error');
+                
+                document.getElementById('authResult').innerHTML = `
+                    <div class="error">
+                        <h3>Initialization Error:</h3>
+                        <p>${error.message}</p>
+                        <p>Check the console logs above for details.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded, starting debug auth...');
+            console.log('Current URL:', window.location.href);
+            console.log('Current Origin:', window.location.origin);
+            initDebugAuth();
+        });
+    </script>
+</body>
+</html>

@@ -8,18 +8,69 @@
     <meta name="author" content="TaskLoom">
     
     <!-- Favicon -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad5' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23A78BFA;stop-opacity:1' /><stop offset='100%' style='stop-color:%238B5CF6;stop-opacity:1' /></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad5)'/><circle cx='30' cy='40' r='3' fill='white'/><rect x='40' y='37' width='30' height='6' fill='white' rx='3'/><circle cx='30' cy='55' r='3' fill='white'/><rect x='40' y='52' width='25' height='6' fill='white' rx='3'/><path d='M25 70 L35 80 L45 65' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad1' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%234285F4;stop-opacity:1' /><stop offset='100%' style='stop-color:%2334A853;stop-opacity:1' /></linearGradient></defs><rect x='15' y='25' width='70' height='55' fill='url(%23grad1)' rx='8'/><rect x='20' y='30' width='60' height='45' fill='white' rx='4'/><rect x='17' y='17' width='8' height='16' fill='%23666' rx='2'/><rect x='75' y='17' width='8' height='16' fill='%23666' rx='2'/><rect x='15' y='25' width='70' height='12' fill='url(%23grad1)' rx='8 8 0 0'/><line x1='30' y1='42' x2='42' y2='42' stroke='%23ddd' stroke-width='2'/><line x1='52' y1='42' x2='70' y2='42' stroke='%23ddd' stroke-width='2'/><line x1='30' y1='52' x2='42' y2='52' stroke='%23ddd' stroke-width='2'/><line x1='52' y1='52' x2='70' y2='52' stroke='%23ddd' stroke-width='2'/><line x1='30' y1='62' x2='42' y2='62' stroke='%23ddd' stroke-width='2'/><circle cx='70' cy='70' r='18' fill='%2334A853'/><path d='M62 70 L67 75 L78 64' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 
     <title>TaskLoom - Monthly Task Calendar</title>
     
-    <!-- Open Graph Meta Tags -->
+    <!-- Open Graph Meta Tags for Facebook, LinkedIn, WhatsApp -->
     <meta property="og:title" content="TaskLoom - Monthly Task Calendar">
-    <meta property="og:description" content="Weave your tasks into perfect productivity with our intuitive task management calendar.">
+    <meta property="og:description" content="Weave your tasks into perfect productivity with our intuitive task management calendar. Plan monthly goals, track daily tasks, and achieve more with TaskLoom.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://roshiplux.github.io/TaskLoom">
+    <meta property="og:url" content="https://taskloomapp.web.app/">
+    <meta property="og:image" content="https://taskloomapp.web.app/assets/images/social/social-preview.svg">
+    <meta property="og:image:alt" content="TaskLoom Monthly Task Calendar - Productivity and task management made simple">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="TaskLoom">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="TaskLoom - Monthly Task Calendar">
+    <meta name="twitter:description" content="Weave your tasks into perfect productivity with our intuitive task management calendar. Plan monthly goals, track daily tasks, and achieve more.">
+    <meta name="twitter:image" content="https://taskloomapp.web.app/assets/images/social/social-preview.svg">
+    <meta name="twitter:image:alt" content="TaskLoom Monthly Task Calendar interface">
+    <meta name="twitter:site" content="@TaskLoom">
+    <meta name="twitter:creator" content="@TaskLoom">
+    
+    <!-- Additional Social Meta Tags -->
+    <meta property="fb:app_id" content="">
+    <meta name="theme-color" content="#4285F4">
+    <meta name="msapplication-TileColor" content="#4285F4">
+    <meta name="application-name" content="TaskLoom">
+    
+    <!-- Schema.org structured data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "TaskLoom",
+      "description": "Monthly task calendar and productivity management application",
+      "url": "https://taskloomapp.web.app/",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "TaskLoom"
+      }
+    }
+    </script>
+    
+    <!-- Sitemap Links -->
+    <link rel="sitemap" type="application/xml" title="Sitemap" href="sitemap.xml">
     
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -160,8 +211,8 @@
                 <div class="footer-column">
                     <h3>Product</h3>
                     <ul class="footer-links">
-                        <li><a href="calendar.html">Calendar</a></li>
-                        <li><a href="daily.html">Daily Tasks</a></li>
+                        <li><a href="public/calendar.html">Calendar</a></li>
+                        <li><a href="public/daily.html">Tasks</a></li>
                         <li><a href="#">Features</a></li>
                         <li><a href="#">Updates</a></li>
                     </ul>
@@ -191,6 +242,7 @@
         </div>
     </footer>
     <script src="assets/js/config.js"></script>
+    <script src="assets/js/auth.js"></script>
     <script src="assets/js/mobile-enhancements.js"></script>
     <script src="assets/js/services/NotificationService.js"></script>
     <script src="assets/js/services/StorageService.js"></script>
