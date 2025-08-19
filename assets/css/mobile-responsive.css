@@ -152,13 +152,16 @@ nav {
         background: none;
         box-shadow: none;
         padding: 0;
-        gap: 24px;
+        gap: 1.5rem;
         border: none;
+        flex-wrap: nowrap; /* Ensure items stay on one line */
+        white-space: nowrap; /* Prevent text wrapping */
     }
     
     .nav-links a {
         border: none;
         padding: 8px 0;
+        white-space: nowrap; /* Prevent text wrapping */
     }
     
     .mobile-menu-toggle {

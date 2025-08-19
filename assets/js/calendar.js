@@ -15,16 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
         monthPicker: document.getElementById('monthPicker'),
         yearPicker: document.getElementById('yearPicker'),
         monthPickerYear: document.getElementById('monthPickerYear'),
-        weekView: document.getElementById('weekView'),
-        dayView: document.getElementById('dayView'),
-        viewButtons: document.querySelectorAll('.view-btn'),
         monthIndicator: document.getElementById('currentMonthIndicator')
     };
 
     // --- State ---
     let currentDate = new Date();
     let calendarInitialized = false;
-    let calendarViewMode = 'month'; // month|week|day
     let pickerView = 'calendar'; // calendar|months|years
     let isGenerating = false;
 
@@ -139,41 +135,6 @@ document.addEventListener('DOMContentLoaded', () => {
         isGenerating = false;
     }
 
-    /* ================= WEEK VIEW ================= */
-    async function generateWeekView() {
-        if (!els.weekView) return;
-        const start = new Date(currentDate); start.setDate(currentDate.getDate() - currentDate.getDay());
-        const end = new Date(start); end.setDate(start.getDate()+6);
-        const header = els.weekView.querySelector('.week-header');
-        const grid = els.weekView.querySelector('.week-grid');
-        header.innerHTML=''; grid.innerHTML='';
-        const today = new Date();
-        for(let i=0;i<7;i++){
-            const dt=new Date(start); dt.setDate(start.getDate()+i);
-            const h=document.createElement('div'); h.className='week-header-day'; h.innerHTML=`<div>${DOW[i]}</div><div class="wd-num">${dt.getDate()}</div>`; header.appendChild(h);
-            const col=document.createElement('div'); col.className='week-day';
-            if(dt.toDateString()===today.toDateString()) col.classList.add('today');
-            if(dt.getMonth()!==currentDate.getMonth()) col.classList.add('other-month');
-            const label=document.createElement('div'); label.className='week-day-number'; label.textContent=dt.getDate(); col.appendChild(label);
-            const dateKey = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-            if (window.StorageService){ (StorageService.getDailyTasks(dateKey)||[]).slice(0,5).forEach(t=>{const te=document.createElement('div'); te.className='calendar-task'; te.textContent=t.text; col.appendChild(te);}); }
-            grid.appendChild(col);
-        }
-        updateCalendarTitle();
-    }
-
-    /* ================= DAY VIEW ================= */
-    async function generateDayView() {
-        if (!els.dayView) return;
-        const header = els.dayView.querySelector('.day-header');
-        const content = els.dayView.querySelector('.day-content');
-        header.innerHTML = `<div class="day-date">${currentDate.getDate()}</div><div class="day-weekday">${DOW[currentDate.getDay()]}, ${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}</div>`;
-        const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,'0')}-${String(currentDate.getDate()).padStart(2,'0')}`;
-        const tasks = window.StorageService? StorageService.getDailyTasks(dateKey): [];
-        content.innerHTML = `<h3>Daily Tasks (${tasks.length})</h3>` + (tasks.length? tasks.map(t=>`<div class="day-task-item">${t.text}</div>`).join('') : '<div class="muted">No tasks</div>');
-        updateCalendarTitle();
-    }
-
     /* ================= PICKERS ================= */
     function showMonthPicker(){ pickerView='months'; toggleViews(); buildMonthPicker(); }
     function showYearPicker(){ pickerView='years'; toggleViews(); buildYearPicker(); }
@@ -185,66 +146,39 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleViews(){
         if (!els.grid) return;
         const isCal = pickerView==='calendar';
-        els.grid.style.display = (isCal && calendarViewMode==='month')? 'grid':'none';
-        els.weekView?.classList.toggle('hidden', !(isCal && calendarViewMode==='week'));
-        els.dayView?.classList.toggle('hidden', !(isCal && calendarViewMode==='day'));
+        els.grid.style.display = isCal ? 'grid' : 'none';
         els.monthPicker?.classList.toggle('hidden', pickerView!=='months');
         els.yearPicker?.classList.toggle('hidden', pickerView!=='years');
     }
     function refreshActiveCalendarMode(){
-        if (calendarViewMode==='month') generateMonthView();
-        else if (calendarViewMode==='week') generateWeekView();
-        else generateDayView();
+        generateMonthView();
         updateCalendarTitle();
     }
-    function updateCalendarTitle(){ if(!els.currentMonthEl) return; if(calendarViewMode==='month'){ els.currentMonthEl.textContent=`${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; } else if (calendarViewMode==='week'){ const s=new Date(currentDate); s.setDate(currentDate.getDate()-currentDate.getDay()); const e=new Date(s); e.setDate(s.getDate()+6); const sameMonth=s.getMonth()===e.getMonth(); els.currentMonthEl.textContent = sameMonth? `${MONTHS[s.getMonth()]} ${s.getDate()}-${e.getDate()}, ${s.getFullYear()}` : `${MONTHS[s.getMonth()]} ${s.getDate()} - ${MONTHS[e.getMonth()]} ${e.getDate()}, ${s.getFullYear()}`; } else { els.currentMonthEl.textContent=`${MONTHS[currentDate.getMonth()]} ${currentDate.getDate()}, ${currentDate.getFullYear()}`; } }
+    function updateCalendarTitle(){ 
+        if(!els.currentMonthEl) return; 
+        els.currentMonthEl.textContent=`${MONTHS[currentDate.getMonth()]} ${currentDate.getFullYear()}`; 
+    }
 
     /* ================= NAVIGATION ================= */
         function navPrev(){
-            const beforeM = currentDate.getMonth();
             if(pickerView!=='calendar'){
                 if(pickerView==='months'){ currentDate.setFullYear(currentDate.getFullYear()-1); buildMonthPicker(); }
                 else { currentDate.setFullYear(currentDate.getFullYear()-12); buildYearPicker(); }
                 return;
             }
-            if(calendarViewMode==='month'){
-                currentDate.setMonth(currentDate.getMonth()-1);
-                generateMonthView();
-                syncMonthSelector();
-            } else if(calendarViewMode==='week'){
-                currentDate.setDate(currentDate.getDate()-7);
-                const afterM = currentDate.getMonth();
-                generateWeekView();
-                if(afterM!==beforeM) syncMonthSelector();
-            } else { // day
-                currentDate.setDate(currentDate.getDate()-1);
-                const afterM = currentDate.getMonth();
-                generateDayView();
-                if(afterM!==beforeM) syncMonthSelector();
-            }
+            currentDate.setMonth(currentDate.getMonth()-1);
+            generateMonthView();
+            syncMonthSelector();
         }
         function navNext(){
-            const beforeM = currentDate.getMonth();
             if(pickerView!=='calendar'){
                 if(pickerView==='months'){ currentDate.setFullYear(currentDate.getFullYear()+1); buildMonthPicker(); }
                 else { currentDate.setFullYear(currentDate.getFullYear()+12); buildYearPicker(); }
                 return;
             }
-            if(calendarViewMode==='month'){
-                currentDate.setMonth(currentDate.getMonth()+1);
-                generateMonthView();
-                syncMonthSelector();
-            } else if(calendarViewMode==='week'){
-                currentDate.setDate(currentDate.getDate()+7);
-                const afterM = currentDate.getMonth();
-                generateWeekView();
-                if(afterM!==beforeM) syncMonthSelector();
-            } else { // day
-                currentDate.setDate(currentDate.getDate()+1);
-                const afterM = currentDate.getMonth();
-                generateDayView();
-                if(afterM!==beforeM) syncMonthSelector();
-            }
+            currentDate.setMonth(currentDate.getMonth()+1);
+            generateMonthView();
+            syncMonthSelector();
         }
     function goToday(){ currentDate = new Date(); if(pickerView!=='calendar') showCalendarView(); refreshActiveCalendarMode(); syncMonthSelector(); }
     function syncMonthSelector(){ if(!els.monthSelector) return; const today=new Date(); if(currentDate.getMonth()===today.getMonth() && currentDate.getFullYear()===today.getFullYear()) els.monthSelector.value='current'; else els.monthSelector.value=String(currentDate.getMonth()); renderMonthlyTodo(); }
@@ -354,26 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
         goToday();
       }
       
-      // View mode shortcuts
-      if (key === 'm') {
-        calendarViewMode = 'month';
-        refreshActiveCalendarMode();
-        updateViewButtons();
-      } else if (key === 'w') {
-        calendarViewMode = 'week';
-        refreshActiveCalendarMode();
-        updateViewButtons();
-      } else if (key === 'd' && !e.ctrlKey) {
-        calendarViewMode = 'day';
-        refreshActiveCalendarMode();
-        updateViewButtons();
-      }
-    });
-  }
-
-  function updateViewButtons() {
-    els.viewButtons?.forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.view === calendarViewMode);
+      // View mode shortcuts removed - only month view is available
     });
   }
 
@@ -392,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
     els.refreshEvents?.addEventListener('click', ()=>{ if(window.CalendarService) CalendarService._cache={rangeKey:null,events:[]}; refreshActiveCalendarMode(); NotificationService?.show?.('Calendar refreshed','info'); });
     els.currentMonthEl?.addEventListener('click', ()=>{ if(pickerView==='calendar') showMonthPicker(); else if(pickerView==='months') showYearPicker(); else showCalendarView(); });
     els.monthPickerYear?.addEventListener('click', showYearPicker);
-    els.viewButtons?.forEach(btn=> btn.addEventListener('click', ()=>{ calendarViewMode=btn.dataset.view; els.viewButtons.forEach(b=>b.classList.toggle('active', b===btn)); showCalendarView(); }));
+    // View button event listeners removed - only month view is available
 
     document.addEventListener('data-imported', ()=>{ renderMonthlyTodo(); refreshActiveCalendarMode(); });
     document.addEventListener('data-cleared', ()=>{ renderMonthlyTodo(); refreshActiveCalendarMode(); });

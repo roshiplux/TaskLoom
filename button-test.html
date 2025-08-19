@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Visibility Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #cce7ff; color: #004085; border: 1px solid #99d3ff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Sign-In Button Visibility Test</h1>
+    
+    <div id="testResults"></div>
+    
+    <hr>
+    
+    <h2>Manual Check:</h2>
+    <p>Go to <a href="index.html" target="_blank">index.html</a> and check if the sign-in button is visible.</p>
+
+    <script>
+        function runTest() {
+            const results = document.getElementById('testResults');
+            
+            // Test 1: Check if button exists in DOM
+            setTimeout(() => {
+                const button = document.getElementById('googleAuthBtnHero');
+                if (button) {
+                    addResult('✅ SUCCESS: Sign-in button found in DOM', 'success');
+                    
+                    // Test 2: Check if button is visible
+                    const computedStyle = window.getComputedStyle(button);
+                    const isVisible = computedStyle.display !== 'none' && 
+                                    computedStyle.visibility !== 'hidden' && 
+                                    computedStyle.opacity !== '0';
+                    
+                    if (isVisible) {
+                        addResult('✅ SUCCESS: Sign-in button is visible', 'success');
+                    } else {
+                        addResult(`❌ ERROR: Sign-in button is hidden (display: ${computedStyle.display}, visibility: ${computedStyle.visibility}, opacity: ${computedStyle.opacity})`, 'error');
+                    }
+                    
+                    // Test 3: Check button text
+                    addResult(`📝 INFO: Button text: "${button.textContent}"`, 'info');
+                    
+                } else {
+                    addResult('❌ ERROR: Sign-in button not found in DOM', 'error');
+                }
+            }, 1000);
+        }
+        
+        function addResult(message, type) {
+            const results = document.getElementById('testResults');
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        // Load the index.html content to test
+        fetch('index.html')
+            .then(response => response.text())
+            .then(html => {
+                // Create a hidden iframe to load index.html
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.onload = runTest;
+                iframe.srcdoc = html;
+                document.body.appendChild(iframe);
+                
+                // Also check if the button HTML exists in the source
+                if (html.includes('googleAuthBtnHero')) {
+                    addResult('✅ SUCCESS: Sign-in button found in index.html source', 'success');
+                } else {
+                    addResult('❌ ERROR: Sign-in button missing from index.html source', 'error');
+                }
+            })
+            .catch(error => {
+                addResult('❌ ERROR: Could not load index.html - ' + error.message, 'error');
+            });
+    </script>
+</body>
+</html>

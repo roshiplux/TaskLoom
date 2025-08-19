@@ -30,19 +30,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Init Firebase (mandatory)
     if (window.FirebaseService) await FirebaseService.init();
 
-    // Landing page buttons
-    const gBtns = [document.getElementById('googleAuthBtn'), document.getElementById('googleAuthBtnHero'), document.getElementById('googleAuthBtnCta')].filter(Boolean);
-    gBtns.forEach(btn => btn.addEventListener('click', async () => {
-        try {
-            btn.disabled = true; btn.textContent = 'Signing in...';
-            await FirebaseService.signInWithGoogle();
-            NotificationService.show('✅ Signed in', 'success');
-            setTimeout(()=> window.location.replace('calendar.html'), 400);
-        } catch(e){
-            NotificationService.show('❌ Sign in failed', 'error');
-            btn.disabled = false; btn.textContent = 'Sign In';
-        }
-    }));
+    // Landing page buttons - DISABLED to avoid conflict with auth.js
+    // const gBtns = [document.getElementById('googleAuthBtn'), document.getElementById('googleAuthBtnHero'), document.getElementById('googleAuthBtnCta')].filter(Boolean);
+    // gBtns.forEach(btn => btn.addEventListener('click', async () => {
+    //     try {
+    //         btn.disabled = true; btn.textContent = 'Signing in...';
+    //         await FirebaseService.signInWithGoogle();
+    //         NotificationService.show('✅ Signed in', 'success');
+    //         setTimeout(()=> window.location.replace('calendar.html'), 400);
+    //     } catch(e){
+    //         NotificationService.show('❌ Sign in failed', 'error');
+    //         btn.disabled = false; btn.textContent = 'Sign In';
+    //     }
+    // }));
 
     // Profile dropdown interactions
     const userInfo = document.getElementById('userInfo');

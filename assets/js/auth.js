@@ -49,53 +49,69 @@ class AuthManager {
         // Sign in button on homepage
         const heroSignInBtn = document.getElementById('googleAuthBtnHero');
         if (heroSignInBtn) {
+            console.log('✅ Found googleAuthBtnHero button, adding event listener');
             heroSignInBtn.addEventListener('click', () => this.signInWithGoogle());
+        } else {
+            console.log('❌ googleAuthBtnHero button not found in DOM');
         }
 
         // Sign in button on other pages
         const signInBtn = document.getElementById('googleAuthBtn');
         if (signInBtn) {
+            console.log('✅ Found googleAuthBtn button, adding event listener');
             signInBtn.addEventListener('click', () => this.signInWithGoogle());
+        } else {
+            console.log('❌ googleAuthBtn button not found in DOM');
         }
 
         // Sign out button
         const signOutBtn = document.getElementById('signOutBtn');
         if (signOutBtn) {
+            console.log('✅ Found signOutBtn button, adding event listener');
             signOutBtn.addEventListener('click', () => this.signOut());
+        } else {
+            console.log('❌ signOutBtn button not found in DOM');
         }
     }
 
     async signInWithGoogle() {
         if (!this.isInitialized) {
-            console.error('Auth not initialized yet');
+            console.error('❌ Auth not initialized yet');
             return;
         }
 
         try {
-            console.log('Starting Google sign-in...');
+            console.log('🚀 Starting Google sign-in...');
             
             // Show loading state
             this.showLoadingState();
             
+            console.log('🔄 Opening Google OAuth popup...');
             const result = await this.auth.signInWithPopup(this.googleProvider);
             const user = result.user;
             const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
             
-            console.log('Sign-in successful:', user.displayName);
+            console.log('✅ Sign-in successful:', user.displayName, user.email);
             
             // Store user info
             this.currentUser = user;
             
+            // Store session info for calendar.html compatibility
+            sessionStorage.setItem('taskloomFirebaseSignedIn', '1');
+            console.log('🔄 Set session storage for calendar compatibility');
+            
             // Store access token for Google API calls
             if (credential && credential.accessToken) {
                 localStorage.setItem('googleAccessToken', credential.accessToken);
+                console.log('🔄 Stored Google access token');
             }
             
+            console.log('🔄 Initiating redirect to calendar...');
             // Redirect to calendar page
             this.redirectToCalendar();
             
         } catch (error) {
-            console.error('Sign-in error:', error);
+            console.error('❌ Sign-in error:', error);
             this.showErrorMessage('Sign-in failed: ' + error.message);
         } finally {
             this.hideLoadingState();
@@ -122,15 +138,23 @@ class AuthManager {
         this.currentUser = user;
         
         if (user) {
-            // User is signed in
+            // User is signed in - set session storage for calendar.html compatibility
+            sessionStorage.setItem('taskloomFirebaseSignedIn', '1');
+            console.log('🔄 Set session storage for signed-in user');
             this.updateUIForSignedInUser(user);
         } else {
-            // User is signed out
+            // User is signed out - clear session storage
+            sessionStorage.removeItem('taskloomFirebaseSignedIn');
+            console.log('🔄 Cleared session storage for signed-out user');
             this.updateUIForSignedOutUser();
         }
     }
 
     updateUIForSignedInUser(user) {
+        console.log('🔄 Updating UI for signed-in user:', user.email);
+        
+        const isIndexPage = window.location.pathname.includes('index.html') || window.location.pathname === '/' || window.location.pathname === '';
+        
         // Update profile displays
         const profileName = document.getElementById('profileName');
         const profileEmail = document.getElementById('profileEmail');
@@ -143,32 +167,56 @@ class AuthManager {
             profilePhoto.style.display = 'block';
         }
 
-        // Show/hide appropriate elements
-        const authContainer = document.getElementById('authContainer');
-        const profileContainer = document.getElementById('profileContainer');
-        const signInButtons = document.querySelectorAll('[id*="googleAuth"]');
-        
-        if (authContainer) authContainer.style.display = 'none';
-        if (profileContainer) profileContainer.style.display = 'block';
-        
-        // Hide sign-in buttons
-        signInButtons.forEach(btn => {
-            if (btn) btn.style.display = 'none';
-        });
+        // Show/hide appropriate elements (but not on index page)
+        if (!isIndexPage) {
+            const authContainer = document.getElementById('authContainer');
+            const profileContainer = document.getElementById('profileContainer');
+            const signInButtons = document.querySelectorAll('[id*="googleAuth"]');
+            
+            if (authContainer) {
+                authContainer.style.display = 'none';
+                console.log('🔄 Hiding authContainer');
+            }
+            if (profileContainer) {
+                profileContainer.style.display = 'block';
+                console.log('🔄 Showing profileContainer');
+            }
+            
+            // Hide sign-in buttons on other pages
+            signInButtons.forEach(btn => {
+                if (btn) {
+                    btn.style.display = 'none';
+                    console.log('🔄 Hiding sign-in button:', btn.id);
+                }
+            });
+        } else {
+            console.log('🔄 On index page - keeping sign-in buttons visible');
+        }
     }
 
     updateUIForSignedOutUser() {
+        console.log('🔄 Updating UI for signed-out user');
+        
         // Show/hide appropriate elements
         const authContainer = document.getElementById('authContainer');
         const profileContainer = document.getElementById('profileContainer');
         const signInButtons = document.querySelectorAll('[id*="googleAuth"]');
         
-        if (authContainer) authContainer.style.display = 'block';
-        if (profileContainer) profileContainer.style.display = 'none';
+        if (authContainer) {
+            authContainer.style.display = 'block';
+            console.log('🔄 Showing authContainer');
+        }
+        if (profileContainer) {
+            profileContainer.style.display = 'none';
+            console.log('🔄 Hiding profileContainer');
+        }
         
         // Show sign-in buttons
         signInButtons.forEach(btn => {
-            if (btn) btn.style.display = 'inline-flex';
+            if (btn) {
+                btn.style.display = 'inline-flex';
+                console.log('🔄 Showing sign-in button:', btn.id);
+            }
         });
     }
 
@@ -223,9 +271,18 @@ class AuthManager {
     }
 
     redirectToCalendar() {
+        console.log('🔄 redirectToCalendar() called');
+        console.log('🔄 Current location:', window.location.href);
+        
         // Redirect to calendar page after successful sign-in
         setTimeout(() => {
-            window.location.href = 'calendar.html';
+            console.log('🔄 Executing redirect to calendar.html...');
+            try {
+                window.location.href = 'calendar.html';
+                console.log('✅ Redirect initiated');
+            } catch (error) {
+                console.error('❌ Redirect failed:', error);
+            }
         }, 1000);
     }
 
