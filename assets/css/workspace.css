@@ -1,0 +1,111 @@
+/* Unified Workspace Styles */
+
+/* View Toggle Buttons */
+.view-toggle {
+    display: flex;
+    background: var(--section-bg);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 24px;
+    gap: 4px;
+}
+
+.view-toggle-btn {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    background: transparent;
+    color: var(--light-text);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.view-toggle-btn.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+}
+
+.view-toggle-btn:hover:not(.active) {
+    background: rgba(66, 133, 244, 0.1);
+    color: var(--primary-color);
+}
+
+/* Unified View Container */
+.unified-view {
+    min-height: 500px;
+}
+
+.view-content {
+    display: none;
+}
+
+.view-content.active {
+    display: block;
+}
+
+/* Day Modal Task Type & Priority */
+.day-task-type, .day-task-priority {
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: white;
+    color: var(--text-color);
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.day-task-type:focus, .day-task-priority:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+}
+
+.day-task-meta {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--light-text);
+}
+
+.day-task-meta span {
+    background: var(--section-bg);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Modal Scroll Prevention */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .view-toggle {
+        margin-bottom: 16px;
+    }
+    
+    .view-toggle-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .view-toggle-btn span {
+        display: none;
+    }
+    
+    .view-toggle-btn i {
+        font-size: 1.2rem;
+    }
+}

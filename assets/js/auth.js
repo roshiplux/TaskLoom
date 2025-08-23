@@ -30,7 +30,7 @@ class AuthManager {
                 this.handleAuthStateChange(user);
             });
 
-            // Set up Google provider
+            // Set up Google provider with all required scopes
             this.googleProvider = new firebase.auth.GoogleAuthProvider();
             this.googleProvider.addScope('profile');
             this.googleProvider.addScope('email');
@@ -100,10 +100,14 @@ class AuthManager {
             sessionStorage.setItem('taskloomFirebaseSignedIn', '1');
             console.log('🔄 Set session storage for calendar compatibility');
             
-            // Store access token for Google API calls
+            // Store access token for Google API calls (including Calendar)
             if (credential && credential.accessToken) {
                 localStorage.setItem('googleAccessToken', credential.accessToken);
-                console.log('🔄 Stored Google access token');
+                // Also store in FirebaseService for calendar integration
+                if (typeof FirebaseService !== 'undefined') {
+                    FirebaseService.googleAccessToken = credential.accessToken;
+                }
+                console.log('🔄 Stored Google access token with calendar permissions');
             }
             
             console.log('🔄 Initiating redirect to calendar...');
@@ -122,6 +126,10 @@ class AuthManager {
         try {
             await this.auth.signOut();
             localStorage.removeItem('googleAccessToken');
+            // Clear FirebaseService token
+            if (typeof FirebaseService !== 'undefined') {
+                FirebaseService.googleAccessToken = null;
+            }
             console.log('User signed out successfully');
             
             // Redirect to home page
@@ -140,11 +148,20 @@ class AuthManager {
         if (user) {
             // User is signed in - set session storage for calendar.html compatibility
             sessionStorage.setItem('taskloomFirebaseSignedIn', '1');
+            // Restore access token if available
+            const accessToken = localStorage.getItem('googleAccessToken');
+            if (accessToken && typeof FirebaseService !== 'undefined') {
+                FirebaseService.googleAccessToken = accessToken;
+            }
             console.log('🔄 Set session storage for signed-in user');
             this.updateUIForSignedInUser(user);
         } else {
-            // User is signed out - clear session storage
+            // User is signed out - clear session storage and tokens
             sessionStorage.removeItem('taskloomFirebaseSignedIn');
+            localStorage.removeItem('googleAccessToken');
+            if (typeof FirebaseService !== 'undefined') {
+                FirebaseService.googleAccessToken = null;
+            }
             console.log('🔄 Cleared session storage for signed-out user');
             this.updateUIForSignedOutUser();
         }

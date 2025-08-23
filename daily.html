@@ -62,6 +62,24 @@
                 <p>Organize your daily tasks and boost your productivity</p>
             </div>
             
+            <!-- Date Navigation Section -->
+            <div class="date-navigation">
+                <button id="prevDateBtn" class="date-nav-btn" title="Previous Day">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div class="current-date-display">
+                    <div class="current-day" id="currentDayName">Today</div>
+                    <div class="current-date" id="currentDateDisplay">Loading...</div>
+                </div>
+                <button id="nextDateBtn" class="date-nav-btn" title="Next Day">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <button id="todayBtn" class="today-btn" title="Go to Today">
+                    <i class="fas fa-calendar-day"></i>
+                    <span>Today</span>
+                </button>
+            </div>
+            
             <!-- Mini stats row at top -->
             <div class="mini-stats-row">
                 <div class="mini-stat-card progress-mini">
@@ -87,115 +105,56 @@
                 </div>
             </div>
             
-            <!-- Two-column layout for task management -->
-            <div class="daily-task-grid">
-                <!-- Left Column: Task Manager -->
-                <div class="task-manager-column">
-                    <div class="task-manager">
-                        <div class="task-header">
-                            <h2>📝 Add & Manage Tasks</h2>
-                        </div>
-                        <div class="task-body">
-                            <div class="task-categories">
-                                <button class="category-btn active" data-category="all">All Tasks</button>
-                                <button class="category-btn" data-category="work">Work</button>
-                                <button class="category-btn" data-category="personal">Personal</button>
-                                <button class="category-btn" data-category="shopping">Shopping</button>
-                            </div>
-                            
-                            <div class="task-input-container">
-                                <div class="task-input-row">
-                                    <input type="text" id="taskInput" class="task-input" placeholder="Add a new task...">
-                                    <button id="addTaskBtn" class="add-task-btn">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </div>
-                                <div class="task-options-row">
-                                    <div class="task-option">
-                                        <label for="taskDate">📅 Date:</label>
-                                        <input type="date" id="taskDate" class="task-date-input">
-                                    </div>
-                                    <div class="task-option">
-                                        <label for="taskPriority">⚡ Priority:</label>
-                                        <select id="taskPriority" class="task-priority-select">
-                                            <option value="low">🟢 Low</option>
-                                            <option value="medium" selected>🟡 Medium</option>
-                                            <option value="high">🔴 High</option>
-                                        </select>
-                                    </div>
-                                    <div class="task-option">
-                                        <label for="taskType">🏷️ Type:</label>
-                                        <select id="taskType" class="task-type-select">
-                                            <option value="personal">👤 Personal</option>
-                                            <option value="work">💼 Work</option>
-                                            <option value="shopping">🛒 Shopping</option>
-                                            <option value="health">🏥 Health</option>
-                                            <option value="study">📚 Study</option>
-                                            <option value="meeting">🤝 Meeting</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="task-list" id="taskList">
-                                <!-- Tasks will be rendered here by JavaScript -->
-                            </div>
-                        </div>
-                    </div>
+            <!-- Compact Task Overview Row -->
+            <div class="compact-task-overview">
+                <div class="compact-overview-title">
+                    <h3>� Task Overview</h3>
                 </div>
-
-                <!-- Right Column: Task Overview -->
-                <div class="task-overview-column">
-                    <div class="task-overview-panel">
-                        <h3 class="overview-title">📊 Task Overview</h3>
-                        <div class="overview-stats">
-                            <div class="stat-card total-stat">
-                                <div class="stat-icon">📋</div>
-                                <div class="stat-content">
-                                    <span class="stat-label">Total Tasks</span>
-                                    <span class="stat-value" id="mainTotalTasks">0</span>
-                                </div>
-                            </div>
-                            <div class="stat-card pending-stat">
-                                <div class="stat-icon">⏳</div>
-                                <div class="stat-content">
-                                    <span class="stat-label">Pending</span>
-                                    <span class="stat-value" id="mainPendingTasks">0</span>
-                                </div>
-                            </div>
-                            <div class="stat-card completed-stat">
-                                <div class="stat-icon">✅</div>
-                                <div class="stat-content">
-                                    <span class="stat-label">Completed</span>
-                                    <span class="stat-value" id="mainCompletedTasks">0</span>
-                                </div>
-                            </div>
-                            <div class="stat-card progress-stat">
-                                <div class="stat-icon">📈</div>
-                                <div class="stat-content">
-                                    <span class="stat-label">Progress</span>
-                                    <span class="stat-value" id="mainProgressRate">0%</span>
-                                </div>
-                            </div>
-                        </div>
+                <div class="compact-overview-stats">
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-icon">📋</span>
+                        <span class="compact-stat-label">Total</span>
+                        <span class="compact-stat-value" id="mainTotalTasks">0</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-icon">⏳</span>
+                        <span class="compact-stat-label">Pending</span>
+                        <span class="compact-stat-value" id="mainPendingTasks">0</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-icon">✅</span>
+                        <span class="compact-stat-label">Completed</span>
+                        <span class="compact-stat-value" id="mainCompletedTasks">0</span>
+                    </div>
+                    <div class="compact-stat-item">
+                        <span class="compact-stat-icon">📈</span>
+                        <span class="compact-stat-label">Progress</span>
+                        <span class="compact-stat-value" id="mainProgressRate">0%</span>
                     </div>
                 </div>
             </div>
+        
             
-            <!-- Task List Section -->
+            <!-- Compact Task List Section -->
             <div class="task-list-section">
-                <div class="task-list-header">
-                    <h3 class="task-list-title">📋 Task List</h3>
+                <div class="compact-task-list-header">
+                    <div class="compact-header-left">
+                        <h3 class="compact-task-list-title">📋 My Tasks</h3>
+                        <button id="newTaskBtn" class="compact-new-task-btn">
+                            <i class="fas fa-plus"></i>
+                            Add Task
+                        </button>
+                    </div>
                     
-                    <!-- Task Filters -->
-                    <div class="task-filters">
-                        <button onclick="filterMainTasks('all')" class="main-filter-btn active">All Tasks</button>
-                        <button onclick="filterMainTasks('pending')" class="main-filter-btn">Pending</button>
-                        <button onclick="filterMainTasks('completed')" class="main-filter-btn">Completed</button>
-                        <button onclick="filterMainTasks('high')" class="main-filter-btn">🔴 High</button>
-                        <button onclick="filterMainTasks('medium')" class="main-filter-btn">🟡 Medium</button>
-                        <button onclick="filterMainTasks('low')" class="main-filter-btn">🟢 Low</button>
-                        <button onclick="filterMainTasks('today')" class="main-filter-btn">📅 Today</button>
+                    <!-- Compact Task Filters -->
+                    <div class="compact-task-filters">
+                        <button onclick="filterMainTasks('all')" class="compact-filter-btn active">All</button>
+                        <button onclick="filterMainTasks('pending')" class="compact-filter-btn">Pending</button>
+                        <button onclick="filterMainTasks('completed')" class="compact-filter-btn">Done</button>
+                        <button onclick="filterMainTasks('high')" class="compact-filter-btn">🔴</button>
+                        <button onclick="filterMainTasks('medium')" class="compact-filter-btn">🟡</button>
+                        <button onclick="filterMainTasks('low')" class="compact-filter-btn">🟢</button>
+                        <button onclick="filterMainTasks('today')" class="compact-filter-btn">Today</button>
                     </div>
                 </div>
                 
@@ -215,8 +174,99 @@
                                 <span class="task-created">Created: Aug 10</span>
                             </div>
                         </div>
-                        <button onclick="TaskManager.deleteMainTask(1754828485761)" class="task-delete-detailed" title="Delete task">
-                            🗑️
+                        <div class="task-actions">
+                            <button onclick="TaskManager.editMainTask(1754828485761)" class="task-edit-detailed" title="Edit task">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="TaskManager.deleteMainTask(1754828485761)" class="task-delete-detailed" title="Delete task">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Task Management Modal -->
+            <div id="taskManagementModal" class="task-modal hidden">
+                <div class="task-modal-content">
+                    <div class="task-modal-header">
+                        <h3 id="taskModalTitle">📝 Add New Task</h3>
+                        <button id="closeTaskModal" class="task-modal-close">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="task-modal-body">
+                        <form id="taskForm" class="task-form">
+                            <div class="form-group">
+                                <label for="modalTaskText">Task Description</label>
+                                <input type="text" id="modalTaskText" class="form-input" placeholder="Enter task description..." required>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="modalTaskDate">📅 Due Date</label>
+                                    <input type="date" id="modalTaskDate" class="form-input">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="modalTaskPriority">⚡ Priority</label>
+                                    <select id="modalTaskPriority" class="form-input">
+                                        <option value="low">� Low Priority</option>
+                                        <option value="medium" selected>🟡 Medium Priority</option>
+                                        <option value="high">🔴 High Priority</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="modalTaskCategory">🏷️ Category</label>
+                                    <select id="modalTaskCategory" class="form-input">
+                                        <option value="personal">👤 Personal</option>
+                                        <option value="work">💼 Work</option>
+                                        <option value="shopping">🛒 Shopping</option>
+                                        <option value="health">🏥 Health</option>
+                                        <option value="study">📚 Study</option>
+                                        <option value="meeting">🤝 Meeting</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="modalTaskTime">⏰ Time (Optional)</label>
+                                    <input type="time" id="modalTaskTime" class="form-input">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="modalTaskNotes">📝 Notes (Optional)</label>
+                                <textarea id="modalTaskNotes" class="form-input" rows="3" placeholder="Add notes or additional details..."></textarea>
+                            </div>
+                            
+                            <div class="form-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="modalCreateCalendarEvent">
+                                    <span class="checkmark"></span>
+                                    📅 Create Google Calendar event
+                                </label>
+                                
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="modalSetReminder">
+                                    <span class="checkmark"></span>
+                                    🔔 Set reminder notification
+                                </label>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="task-modal-footer">
+                        <button type="button" id="cancelTaskModal" class="btn-secondary">
+                            <i class="fas fa-times"></i>
+                            Cancel
+                        </button>
+                        <button type="submit" id="saveTaskBtn" form="taskForm" class="btn-primary">
+                            <i class="fas fa-save"></i>
+                            Save Task
                         </button>
                     </div>
                 </div>

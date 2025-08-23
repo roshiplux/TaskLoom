@@ -4,7 +4,18 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "**/*.exe",
+      "**/*.bat",
+      "**/*.cmd",
+      "**/*.ps1",
+      "**/*.sh",
+      "**/*.com",
+      "**/*.scr",
+      "**/*.msi",
+      "deploy.ps1",
+      "start-mobile-server.bat",
+      "README.md"
     ]
   }
 }
