@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TaskLoom - Unified Workspace">
+    <meta name="keywords" content="task management, calendar, daily tasks, productivity">
+    <meta name="author" content="TaskLoom">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad5' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23A78BFA;stop-opacity:1' /><stop offset='100%' style='stop-color:%238B5CF6;stop-opacity:1' /></linearGradient></defs><circle cx='50' cy='50' r='45' fill='url(%23grad5)'/><circle cx='30' cy='40' r='3' fill='white'/><rect x='40' y='37' width='30' height='6' fill='white' rx='3'/><circle cx='30' cy='55' r='3' fill='white'/><rect x='40' y='52' width='25' height='6' fill='white' rx='3'/><path d='M25 70 L35 80 L45 65' stroke='white' stroke-width='4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    
+    <title>TaskLoom - Workspace</title>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/workspace.css">
+    <link rel="stylesheet" href="assets/css/mobile-responsive.css">
+    <link rel="stylesheet" href="assets/css/calendar-mobile.css">
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>TaskLoom</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="workspace.html" class="active">Workspace</a></li>
+                    <li><a href="calendar.html">Calendar</a></li>
+                    <li><a href="daily.html">Daily Tasks</a></li>
+                </ul>
+                <div class="auth-buttons">
+                    <div id="userInfo" class="user-info profile-trigger" aria-haspopup="true" aria-expanded="false" style="display:none;">
+                        <img id="userPhoto" src="" alt="User Photo" class="user-photo">
+                        <span id="userName" class="user-name"></span>
+                        <i class="fas fa-chevron-down profile-caret" aria-hidden="true"></i>
+                        <div id="profileMenu" class="profile-menu hidden" role="menu">
+                            <button id="menuCloudSync" role="menuitem">☁️ Sync Now</button>
+                            <button id="menuRealtime" role="menuitem" data-enabled="false">⚡ Realtime: Off</button>
+                            <button id="menuSignOut" role="menuitem">🚪 Sign Out</button>
+                        </div>
+                    </div>
+                </div>
+                <button class="mobile-menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </nav>
+        </div>
+    </header>
+    
+    <main id="main-content">
+        <div class="container">
+            <div class="page-title">
+                <h1>TaskLoom Workspace</h1>
+                <p>Your unified task management and calendar view</p>
+            </div>
+            
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-toggle-btn active" data-view="daily">
+                    <i class="fas fa-tasks"></i>
+                    <span>Daily Tasks</span>
+                </button>
+                <button class="view-toggle-btn" data-view="calendar">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Calendar</span>
+                </button>
+            </div>
+            
+            <!-- Daily Tasks View -->
+            <div id="dailyView" class="view-content active">
+                <!-- Date Navigation -->
+                <div class="date-navigation">
+                    <button class="date-nav-btn" id="prevDay" title="Previous Day">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <div class="current-date-display">
+                        <div class="current-day" id="currentDay">Loading...</div>
+                        <div class="current-date" id="currentDate">Loading...</div>
+                    </div>
+                    <button class="today-btn" id="todayBtn">
+                        <i class="fas fa-home"></i>
+                        <span>Today</span>
+                    </button>
+                    <button class="date-nav-btn" id="nextDay" title="Next Day">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- Task Overview Panel -->
+                <div class="overview-panel">
+                    <div class="overview-header">
+                        <h3>📊 Task Overview</h3>
+                    </div>
+                    <div class="overview-content">
+                        <div class="overview-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalTasks">0</span>
+                                <span class="stat-label">Total</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="completedTasks">0</span>
+                                <span class="stat-label">Done</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="pendingTasks">0</span>
+                                <span class="stat-label">Pending</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="progressPercentage">0%</span>
+                                <span class="stat-label">Progress</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Panel -->
+                <div class="progress-panel">
+                    <div class="progress-header">
+                        <h3>📈 Daily Progress</h3>
+                    </div>
+                    <div class="progress-content">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                            </div>
+                            <span class="progress-text" id="progressText">0% Complete</span>
+                        </div>
+                        <div class="progress-details">
+                            <div class="category-progress">
+                                <div class="category-item">
+                                    <span class="category-color work"></span>
+                                    <span class="category-name">Work: <span id="workProgress">0/0</span></span>
+                                </div>
+                                <div class="category-item">
+                                    <span class="category-color personal"></span>
+                                    <span class="category-name">Personal: <span id="personalProgress">0/0</span></span>
+                                </div>
+                                <div class="category-item">
+                                    <span class="category-color health"></span>
+                                    <span class="category-name">Health: <span id="healthProgress">0/0</span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Task Management -->
+                <div class="task-management">
+                    <div class="task-header">
+                        <h3>📝 Today's Tasks</h3>
+                        <button class="new-task-btn" id="newTaskBtn">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Task</span>
+                        </button>
+                    </div>
+                    
+                    <div class="task-filters">
+                        <button class="filter-btn active" data-filter="all">All</button>
+                        <button class="filter-btn" data-filter="pending">Pending</button>
+                        <button class="filter-btn" data-filter="completed">Completed</button>
+                        <button class="filter-btn" data-filter="high">High Priority</button>
+                    </div>
+                    
+                    <div class="task-list" id="taskList">
+                        <div class="no-tasks">
+                            <i class="fas fa-clipboard-list"></i>
+                            <p>No tasks for today. Click "Add Task" to get started!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Calendar View -->
+            <div id="calendarView" class="view-content">
+                <div id="monthlyTodoPanel">
+                    <div class="monthly-todo-header">
+                        <div class="monthly-todo-title">
+                            <h3>📅 Monthly To-Do</h3>
+                            <span id="currentMonthIndicator" class="month-indicator">August 2025</span>
+                        </div>
+                        <select id="monthSelector" class="month-selector">
+                            <option value="current">Current Month</option>
+                            <option value="0">January</option>
+                            <option value="1">February</option>
+                            <option value="2">March</option>
+                            <option value="3">April</option>
+                            <option value="4">May</option>
+                            <option value="5">June</option>
+                            <option value="6">July</option>
+                            <option value="7">August</option>
+                            <option value="8">September</option>
+                            <option value="9">October</option>
+                            <option value="10">November</option>
+                            <option value="11">December</option>
+                        </select>
+                    </div>
+                    <div class="monthly-todo-content">
+                        <div class="monthly-task-input">
+                            <input type="text" id="monthlyTaskInput" placeholder="Add a monthly goal..." maxlength="100">
+                            <button id="addMonthlyTaskBtn">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                        <div class="monthly-todo-list" id="monthlyTodoList">
+                            <!-- Monthly tasks will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="calendar-header">
+                    <div class="calendar-controls">
+                        <button id="prevMonth" class="calendar-nav-btn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <h2 id="currentMonth" class="current-month">August 2025</h2>
+                        <button id="nextMonth" class="calendar-nav-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    <div class="calendar-actions">
+                        <button id="todayBtnCal" class="today-btn">
+                            <i class="fas fa-home"></i>
+                            <span>Today</span>
+                        </button>
+                        <button id="refreshEvents" class="refresh-btn">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button id="calendarIntegrationBtn" class="calendar-integration-btn" style="display: none;">
+                            <i class="fab fa-google"></i>
+                            <span>Calendar</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Calendar Grid -->
+                <div class="calendar-grid" id="calendar-grid">
+                    <!-- Calendar will be generated by JavaScript -->
+                </div>
+                
+                <!-- Day Detail Modal -->
+                <div id="dayDetailModal" class="day-modal hidden">
+                    <div class="day-modal-content">
+                        <div class="day-modal-header">
+                            <div class="day-modal-title">
+                                <h3 id="dayModalDate">August 23, 2025</h3>
+                                <span id="dayModalInfo" class="day-info">Today</span>
+                            </div>
+                            <button id="closeDayModal" class="close-modal">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="day-modal-body">
+                            <!-- Add Task Section -->
+                            <div class="day-task-input">
+                                <input type="text" id="dayTaskInput" placeholder="Add task for this day..." maxlength="100">
+                                <select id="dayTaskType" class="day-task-type" title="Task Type">
+                                    <option value="general">General</option>
+                                    <option value="work">Work</option>
+                                    <option value="personal">Personal</option>
+                                    <option value="event">Event</option>
+                                </select>
+                                <select id="dayTaskPriority" class="day-task-priority" title="Priority">
+                                    <option value="normal">Normal</option>
+                                    <option value="high">High</option>
+                                    <option value="low">Low</option>
+                                </select>
+                                <button id="addDayTaskBtn">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            
+                            <!-- Tasks Section -->
+                            <div class="day-section">
+                                <h4><i class="fas fa-tasks"></i> Daily Tasks (<span id="dayTaskCount">0</span>)</h4>
+                                <div id="dayTasksList" class="day-tasks-list">
+                                    <div class="day-empty">No tasks for this day</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Events Section -->
+                            <div class="day-section">
+                                <h4><i class="fas fa-calendar-alt"></i> Events (<span id="dayEventCount">0</span>)</h4>
+                                <div id="dayEventsList" class="day-events-list">
+                                    <div class="day-empty">No events for this day</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Task Modal (for Daily Tasks) -->
+    <div id="taskModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="taskModalTitle">📝 Add New Task</h3>
+                <button id="closeTaskModal" class="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm" class="task-form">
+                    <div class="form-group">
+                        <label for="modalTaskText">Task Description *</label>
+                        <input type="text" id="modalTaskText" required maxlength="200" placeholder="What needs to be done?">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modalTaskDate">Date</label>
+                            <input type="date" id="modalTaskDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalTaskTime">Time (Optional)</label>
+                            <input type="time" id="modalTaskTime">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modalTaskPriority">Priority</label>
+                            <select id="modalTaskPriority" required>
+                                <option value="low">🟢 Low</option>
+                                <option value="medium" selected>🟡 Medium</option>
+                                <option value="high">🔴 High</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalTaskCategory">Category</label>
+                            <select id="modalTaskCategory" required>
+                                <option value="personal">👤 Personal</option>
+                                <option value="work">💼 Work</option>
+                                <option value="health">❤️ Health</option>
+                                <option value="finance">💰 Finance</option>
+                                <option value="learning">📚 Learning</option>
+                                <option value="social">👥 Social</option>
+                                <option value="other">📋 Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modalTaskNotes">Notes (Optional)</label>
+                        <textarea id="modalTaskNotes" rows="3" maxlength="500" placeholder="Additional details or context..."></textarea>
+                    </div>
+                    
+                    <div class="form-options">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="modalCreateCalendarEvent">
+                            <span class="checkmark"></span>
+                            Create Google Calendar event
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="modalSetReminder">
+                            <span class="checkmark"></span>
+                            Set reminder notification
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelTaskModal" class="btn-secondary">Cancel</button>
+                <button type="submit" id="saveTaskModal" class="btn-primary">Save Task</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container"></div>
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h3>TaskLoom</h3>
+                    <p>Weave your tasks into perfect productivity with our intuitive task management calendar.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h3>Product</h3>
+                    <ul class="footer-links">
+                        <li><a href="workspace.html">Workspace</a></li>
+                        <li><a href="calendar.html">Calendar</a></li>
+                        <li><a href="daily.html">Daily Tasks</a></li>
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Updates</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Resources</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">Tutorials</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Company</h3>
+                    <ul class="footer-links">
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Contact</a></li>
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 TaskLoom. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="assets/js/config.js"></script>
+    <script src="assets/js/mobile-enhancements.js"></script>
+    <script src="assets/js/services/NotificationService.js"></script>
+    <script src="assets/js/services/StorageService.js"></script>
+    <script src="assets/js/services/FirebaseService.js"></script>
+    <script src="assets/js/services/CalendarService.js"></script>
+    <script src="assets/js/services/HolidayService.js"></script>
+    <script src="assets/js/workspace.js"></script>
+    <script src="assets/js/main.js"></script>
+    <script>if(!sessionStorage.getItem('taskloomFirebaseSignedIn')){window.location.replace('index.html');}</script>
+</body>
+</html>

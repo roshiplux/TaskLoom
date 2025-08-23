@@ -5,7 +5,12 @@ class CalendarService {
   static _cache = { rangeKey: null, events: [] };
 
   static async fetchEvents(startISO, endISO) {
-    if (!FirebaseService.user || !FirebaseService.googleAccessToken) return [];
+    if (!FirebaseService.user) return [];
+    
+    // Check for access token in FirebaseService or localStorage
+    let accessToken = FirebaseService.googleAccessToken || localStorage.getItem('googleAccessToken');
+    if (!accessToken) return [];
+    
     const rangeKey = startISO + '|' + endISO;
     if (this._cache.rangeKey === rangeKey && this._cache.events.length) return this._cache.events;
     const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
@@ -15,12 +20,11 @@ class CalendarService {
     url.searchParams.set('orderBy', 'startTime');
     try {
       console.log('Fetching calendar events for range:', startISO, 'to', endISO);
-      let res = await fetch(url.toString(), { headers: { 'Authorization': 'Bearer ' + FirebaseService.googleAccessToken } });
+      let res = await fetch(url.toString(), { headers: { 'Authorization': 'Bearer ' + accessToken } });
       if (res.status === 401 || res.status === 403) {
-        console.log('Calendar auth failed, attempting re-consent...');
-        // Attempt re-consent then retry once
-        await FirebaseService.reConsentCalendar().catch(()=>{});
-        res = await fetch(url.toString(), { headers: { 'Authorization': 'Bearer ' + FirebaseService.googleAccessToken } });
+        console.log('Calendar auth failed - please re-sign in for calendar access');
+        NotificationService.show('⚠️ Calendar access expired. Please sign in again.', 'warning');
+        return [];
       }
       if (!res.ok) throw new Error('Fetch events failed: ' + res.status);
       const data = await res.json();
@@ -48,34 +52,39 @@ class CalendarService {
       NotificationService.show('⚠️ Sign in first', 'warning');
       return null;
     }
-    const token = FirebaseService.googleAccessToken;
+    
+    // Check for access token in FirebaseService or localStorage
+    let token = FirebaseService.googleAccessToken || localStorage.getItem('googleAccessToken');
     if (!token) {
-      NotificationService.show('❌ Missing calendar permission. Re-sign in.', 'error');
+      NotificationService.show('❌ Missing calendar permission. Please sign in again.', 'error');
       return null;
     }
-    const start = new Date();
-    const end = new Date(Date.now() + 30*60*1000);
-    const event = { summary: task.text || 'Task', start:{dateTime:start.toISOString()}, end:{dateTime:end.toISOString()} };
+    
+    // If task has a specific date, use it. Otherwise use current date.
+    const taskDate = task.date ? new Date(task.date) : new Date();
+    
+    // Create an all-day event
+    const startDate = new Date(taskDate);
+    startDate.setHours(9, 0, 0, 0); // 9 AM
+    const endDate = new Date(taskDate);
+    endDate.setHours(10, 0, 0, 0); // 10 AM (1 hour duration)
+    
+    const event = { 
+      summary: task.text || 'Task',
+      description: 'Created by TaskLoom',
+      start: { dateTime: startDate.toISOString() }, 
+      end: { dateTime: endDate.toISOString() }
+    };
+    
     let res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type':'application/json' },
       body: JSON.stringify(event)
     });
+    
     if (res.status === 401 || res.status === 403) {
-      // Try forced re-consent once
-      try {
-        await FirebaseService.reConsentCalendar();
-        const retryToken = FirebaseService.googleAccessToken;
-        if (!retryToken) throw new Error('No token after re-consent');
-        res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-          method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + retryToken, 'Content-Type':'application/json' },
-          body: JSON.stringify(event)
-        });
-      } catch(e) {
-        NotificationService.show('❌ Calendar permission required', 'error');
-        return null;
-      }
+      NotificationService.show('❌ Calendar access expired. Please sign in again.', 'error');
+      return null;
     }
     if (!res.ok) {
       const txt = await res.text();

@@ -26,7 +26,7 @@ class HolidayService {
   static getEventsForDate(dateStr) {
     const events = [];
     
-    if (CONFIG.APP.SHOW_HOLIDAYS && this.holidays2025[dateStr]) {
+    if (window.CONFIG?.APP?.SHOW_HOLIDAYS && this.holidays2025[dateStr]) {
       events.push({
         type: 'holiday',
         title: this.holidays2025[dateStr],
@@ -34,7 +34,7 @@ class HolidayService {
       });
     }
 
-    if (CONFIG.APP.SHOW_POYA_DAYS && this.poyaDays2025.includes(dateStr)) {
+    if (window.CONFIG?.APP?.SHOW_POYA_DAYS && this.poyaDays2025.includes(dateStr)) {
       // Don't duplicate if already in holidays
       if (!this.holidays2025[dateStr] || !this.holidays2025[dateStr].includes('Poya')) {
         events.push({

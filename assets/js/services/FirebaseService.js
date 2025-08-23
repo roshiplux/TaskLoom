@@ -68,24 +68,13 @@ class FirebaseService {
     this.googleAccessToken = credential && credential.accessToken;
     try { sessionStorage.setItem('taskloomFirebaseSignedIn','1'); } catch(_){}
     return result.user;
-  }  // Force re-consent to ensure calendar scope granted (user may have previously signed in without it)
-  static async reConsentCalendar() {
-    await this.init();
-    const provider = new firebase.auth.GoogleAuthProvider();
-    provider.addScope('https://www.googleapis.com/auth/calendar');
-    // Force consent dialog to re-ask for any missing scopes
-    provider.setCustomParameters({ prompt: 'consent' });
-    const result = await this.auth.signInWithPopup(provider);
-    const credential = firebase.auth.GoogleAuthProvider.credentialFromResult(result);
-    this.googleAccessToken = credential && credential.accessToken;
-    return result.user;
   }
 
   static async signOut() {
     if (!this.auth) return;
     await this.auth.signOut();
-  this.googleAccessToken = null;
-  try { sessionStorage.removeItem('taskloomFirebaseSignedIn'); } catch(_){}
+    this.googleAccessToken = null;
+    try { sessionStorage.removeItem('taskloomFirebaseSignedIn'); } catch(_){}
   }
 
   // Firestore task collections (future wiring)
